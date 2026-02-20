@@ -3,11 +3,13 @@ import { useState, useRef, useEffect } from 'react'
 import {
   Plus, ArrowUp, Paperclip, Mic, MoreHorizontal,
   TrendingUp, PenLine, BarChart3, Calendar, Code2,
-  Globe, MessageSquare, Brain, Users, Zap, Link2
+  Globe, MessageSquare, Brain, Users, Zap, Link2,
+  Search, AlertCircle, CheckCircle2, Loader2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAgentStore, AGENTS } from '@/store/agentStore'
 import { useChatStore } from '@/store/chatStore'
+import type { StreamEvent } from '@/types'
 
 const AGENT_QUICK_ACTIONS: Record<string, { icon: React.ElementType; label: string }[]> = {
   orchestrator:       [{ icon: Brain, label: 'Strategic overview' }, { icon: Zap, label: 'Run all agents' }, { icon: BarChart3, label: 'Weekly report' }, { icon: MoreHorizontal, label: 'More' }],
@@ -41,9 +43,20 @@ export default function ChatInterface() {
   const actions = AGENT_QUICK_ACTIONS[activeAgent.type] ?? []
   const typing = isTyping[activeAgentId] ?? false
 
+  // Streaming state — lives in component so it auto-clears per agent switch
+  interface StreamState {
+    events: StreamEvent[]
+    finalText: string
+    isDone: boolean
+  }
+  const [streamingState, setStreamingState] = useState<StreamState | null>(null)
+
+  // Reset streaming when switching agents
+  useEffect(() => { setStreamingState(null) }, [activeAgentId])
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [agentMessages, typing])
+  }, [agentMessages, typing, streamingState])
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -58,19 +71,71 @@ export default function ChatInterface() {
     setInputValue('')
     addMessage(activeAgentId, { role: 'user', content, content_type: 'text' })
     setTyping(activeAgentId, true)
+    setStreamingState({ events: [], finalText: '', isDone: false })
+
     try {
-      await new Promise(r => setTimeout(r, 1200 + Math.random() * 800))
+      // ── SSE streaming to NexOS backend ────────────────────
+      const res = await fetch('http://localhost:8001/chat/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent_type: activeAgent.type, message: content }),
+      })
+
+      if (!res.ok || !res.body) throw new Error(`Server error ${res.status}`)
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+      let finalAnswer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const lines = buf.split('\n')
+        buf = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const event: StreamEvent = JSON.parse(line.slice(6))
+            if (event.type === 'final_answer') finalAnswer = event.content ?? ''
+            if (event.type === 'done') {
+              setStreamingState(prev => prev ? { ...prev, isDone: true } : null)
+              continue
+            }
+            if (event.type === 'text_chunk') {
+              // Append chunk to finalText for live typewriter effect
+              setStreamingState(prev => prev
+                ? { ...prev, finalText: prev.finalText + (event.content ?? '') }
+                : null
+              )
+              continue
+            }
+            setStreamingState(prev => prev
+              ? { ...prev, events: [...prev.events, event] }
+              : null
+            )
+          } catch { /* ignore malformed events */ }
+        }
+      }
+
+      setTyping(activeAgentId, false)
+      setStreamingState(null)
+      addMessage(activeAgentId, {
+        role: 'agent',
+        content: finalAnswer || 'Task complete.',
+        content_type: 'text',
+      })
+    } catch (err) {
+      // ── Fallback — backend offline ─────────────────────────
+      console.warn('[NexOS] Stream unavailable, using simulation:', err)
+      setStreamingState(null)
+      await new Promise(r => setTimeout(r, 900 + Math.random() * 600))
       setTyping(activeAgentId, false)
       addMessage(activeAgentId, {
         role: 'agent',
         content: getSimulatedReply(activeAgent.type, content),
-        content_type: 'text',
-      })
-    } catch (err) {
-      setTyping(activeAgentId, false)
-      addMessage(activeAgentId, {
-        role: 'agent',
-        content: 'Something went wrong on my end. Please try again.',
         content_type: 'text',
       })
     }
@@ -80,7 +145,7 @@ export default function ChatInterface() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
-  const hasMessages = agentMessages.length > 0
+  const hasMessages = agentMessages.length > 0 || streamingState !== null
 
   return (
     <div style={{
@@ -176,9 +241,34 @@ export default function ChatInterface() {
               ))}
             </AnimatePresence>
 
-            {/* Typing indicator */}
+            {/* Streaming live agent panel */}
             <AnimatePresence>
-              {typing && (
+              {streamingState && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}
+                >
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 8, flexShrink: 0, marginTop: 2,
+                    background: color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color }}>{activeAgent.name[0]}</span>
+                  </div>
+                  <StreamingAgentMessage
+                    state={streamingState}
+                    color={color}
+                    agentName={activeAgent.name}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Classic typing dots (used only when NOT streaming) */}
+            <AnimatePresence>
+              {typing && !streamingState && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -290,6 +380,110 @@ export default function ChatInterface() {
     </div>
   )
 }
+
+// ── Streaming agent panel ───────────────────────────────────────
+
+interface StreamState { events: StreamEvent[]; finalText: string; isDone: boolean }
+
+function StreamingAgentMessage({ state, color, agentName }: {
+  state: StreamState; color: string; agentName: string
+}) {
+  return (
+    <div className="bubble-agent" style={{
+      maxWidth: 560, padding: 0, overflow: 'hidden',
+      border: `1px solid ${color}25`, borderRadius: 14,
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '10px 14px 8px',
+        borderBottom: `1px solid ${color}18`,
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: color + '07',
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          {agentName}
+        </span>
+        {!state.isDone && (
+          <span style={{
+            fontSize: 10.5, color: 'var(--text-muted)',
+            display: 'flex', alignItems: 'center', gap: 4
+          }}>
+            <Loader2 size={10} style={{ animation: 'spin 1s linear infinite', display: 'inline' }} />
+            working…
+          </span>
+        )}
+        {state.isDone && <CheckCircle2 size={13} color={color} />}
+      </div>
+
+      {/* Steps */}
+      {state.events.length > 0 && (
+        <div style={{ padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {state.events.map((ev, i) => <EventRow key={i} event={ev} color={color} />)}
+        </div>
+      )}
+
+      {/* Final answer */}
+      {state.finalText && (
+        <div style={{
+          padding: '10px 14px 12px',
+          borderTop: `1px solid ${color}18`,
+          fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.65,
+          whiteSpace: 'pre-wrap',
+        }}>
+          {state.finalText}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EventRow({ event, color }: { event: StreamEvent; color: string }) {
+  if (event.type === 'agent_started') return null  // header already shows this
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'flex-start', gap: 7,
+    fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5,
+  }
+  const iconStyle: React.CSSProperties = { flexShrink: 0, marginTop: 1, opacity: 0.75 }
+
+  if (event.type === 'tool_used') return (
+    <div style={rowStyle}>
+      <Search size={12} color={color} style={iconStyle} />
+      <span>
+        <span style={{ fontWeight: 600, color }}>Using </span>
+        <span style={{ fontFamily: 'monospace' }}>{event.tool}</span>
+        {event.input && (
+          <span style={{ color: 'var(--text-muted)' }}>{' '}— {event.input.slice(0, 100)}{event.input.length > 100 ? '…' : ''}</span>
+        )}
+      </span>
+    </div>
+  )
+
+  if (event.type === 'thinking') return (
+    <div style={{ ...rowStyle, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+      <div style={{ width: 4, height: 4, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 6 }} />
+      <span>{(event.content ?? '').slice(0, 200)}{(event.content ?? '').length > 200 ? '…' : ''}</span>
+    </div>
+  )
+
+  if (event.type === 'step') return (
+    <div style={rowStyle}>
+      <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-muted)', flexShrink: 0, marginTop: 6 }} />
+      <span style={{ color: 'var(--text-muted)' }}>{(event.content ?? '').slice(0, 200)}</span>
+    </div>
+  )
+
+  if (event.type === 'error') return (
+    <div style={{ ...rowStyle, color: '#EF4444' }}>
+      <AlertCircle size={12} style={iconStyle} />
+      <span>{event.content}</span>
+    </div>
+  )
+
+  return null
+}
+
+// ── Simulated replies (fallback when backend offline) ──────────
 
 function getSimulatedReply(type: string, input: string): string {
   const lc = input.toLowerCase()

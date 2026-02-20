@@ -17,6 +17,25 @@ export interface Agent {
 export type MessageRole = 'user' | 'agent' | 'system'
 export type MessageContentType = 'text' | 'report' | 'meeting_summary' | 'market_brief' | 'code'
 
+export type StreamEventType =
+  | 'agent_started'
+  | 'tool_used'
+  | 'thinking'
+  | 'step'
+  | 'text_chunk'
+  | 'final_answer'
+  | 'error'
+  | 'done'
+
+export interface StreamEvent {
+  type: StreamEventType
+  content?: string
+  tool?: string
+  input?: string
+  agent_name?: string
+  agent_type?: string
+}
+
 export interface Message {
   id: string
   conversation_id: string
