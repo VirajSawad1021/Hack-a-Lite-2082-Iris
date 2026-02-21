@@ -15,7 +15,9 @@ Tool assignment by agent:
   customer_service    → Gmail (send, draft, read), Notion (create, search)
   technical           → Slack (post), Notion (create, search)
   market_intelligence → (search/web already on agent — no extra integration tools)
-  meeting             → Slack (post), Gmail (read), Notion (create, read, search)
+  meeting             → Slack (post), Gmail (read), Notion (create, read, search),
+                        Trello (list boards, get cards, card details, comment, move),
+                        Call tools (voice call, schedule meeting, task alert)
   hr_ops              → Gmail (send, draft), Notion (create, search)
 """
 
@@ -36,6 +38,16 @@ _notion_read      = None
 _wa_send          = None
 _wa_template      = None
 _wa_status        = None
+# Trello
+_trello_boards    = None
+_trello_cards     = None
+_trello_card_det  = None
+_trello_comment   = None
+_trello_move      = None
+# Call tools
+_voice_call       = None
+_schedule_meeting = None
+_task_alert       = None
 
 
 def _get(name: str):
@@ -44,6 +56,8 @@ def _get(name: str):
     global _gmail_send, _gmail_draft, _gmail_read
     global _notion_create, _notion_search, _notion_read
     global _wa_send, _wa_template, _wa_status
+    global _trello_boards, _trello_cards, _trello_card_det, _trello_comment, _trello_move
+    global _voice_call, _schedule_meeting, _task_alert
 
     if name == "slack_post"    and _slack_post    is None:
         from tools.slack_tools import SlackPostMessageTool
@@ -81,6 +95,32 @@ def _get(name: str):
     if name == "wa_status"     and _wa_status     is None:
         from tools.whatsapp_tools import WhatsAppStatusTool
         _wa_status     = WhatsAppStatusTool()
+    # Trello
+    if name == "trello_boards"   and _trello_boards   is None:
+        from tools.trello_tools import TrelloListBoardsTool
+        _trello_boards   = TrelloListBoardsTool()
+    if name == "trello_cards"    and _trello_cards    is None:
+        from tools.trello_tools import TrelloGetBoardCardsTool
+        _trello_cards    = TrelloGetBoardCardsTool()
+    if name == "trello_card_det" and _trello_card_det is None:
+        from tools.trello_tools import TrelloGetCardDetailsTool
+        _trello_card_det = TrelloGetCardDetailsTool()
+    if name == "trello_comment"  and _trello_comment  is None:
+        from tools.trello_tools import TrelloCommentCardTool
+        _trello_comment  = TrelloCommentCardTool()
+    if name == "trello_move"     and _trello_move     is None:
+        from tools.trello_tools import TrelloMoveCardTool
+        _trello_move     = TrelloMoveCardTool()
+    # Call tools
+    if name == "voice_call"       and _voice_call       is None:
+        from tools.call_tools import TwilioVoiceCallTool
+        _voice_call       = TwilioVoiceCallTool()
+    if name == "schedule_meeting" and _schedule_meeting is None:
+        from tools.call_tools import ScheduleMeetingFromCardTool
+        _schedule_meeting = ScheduleMeetingFromCardTool()
+    if name == "task_alert"       and _task_alert       is None:
+        from tools.call_tools import TwilioTaskAlertCallTool
+        _task_alert       = TwilioTaskAlertCallTool()
 
     return {
         "slack_post":    _slack_post,
@@ -95,6 +135,16 @@ def _get(name: str):
         "wa_send":       _wa_send,
         "wa_template":   _wa_template,
         "wa_status":     _wa_status,
+        # Trello
+        "trello_boards":   _trello_boards,
+        "trello_cards":    _trello_cards,
+        "trello_card_det": _trello_card_det,
+        "trello_comment":  _trello_comment,
+        "trello_move":     _trello_move,
+        # Call tools
+        "voice_call":       _voice_call,
+        "schedule_meeting": _schedule_meeting,
+        "task_alert":       _task_alert,
     }[name]
 
 
@@ -127,6 +177,11 @@ _AGENT_TOOLS: dict[str, list[str]] = {
         "gmail_read",
         "notion_create", "notion_search", "notion_read",
         "wa_send", "wa_template",
+        # Trello integration
+        "trello_boards", "trello_cards", "trello_card_det",
+        "trello_comment", "trello_move",
+        # Call / meeting scheduling
+        "voice_call", "schedule_meeting", "task_alert",
     ],
     "hr_ops": [
         "gmail_send", "gmail_draft",
