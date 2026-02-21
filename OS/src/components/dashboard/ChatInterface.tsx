@@ -6,7 +6,7 @@ import {
   Plus, ArrowUp, Paperclip, Mic, MoreHorizontal,
   TrendingUp, PenLine, BarChart3, Calendar, Code2,
   Globe, MessageSquare, Brain, Users, Zap, Link2,
-  Search, AlertCircle, CheckCircle2, Loader2
+  Search, AlertCircle, CheckCircle2, Loader2, Trash2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAgentStore, AGENTS } from '@/store/agentStore'
@@ -21,6 +21,7 @@ const AGENT_QUICK_ACTIONS: Record<string, { icon: React.ElementType; label: stri
   market_intelligence:[{ icon: Globe, label: 'Competitor moves' }, { icon: TrendingUp, label: 'Trend radar' }, { icon: PenLine, label: 'Market brief' }, { icon: MoreHorizontal, label: 'More' }],
   meeting:            [{ icon: Calendar, label: "Today's schedule" }, { icon: PenLine, label: 'Meeting notes' }, { icon: Zap, label: 'Action items' }, { icon: MoreHorizontal, label: 'More' }],
   hr_ops:             [{ icon: Users, label: 'Team overview' }, { icon: PenLine, label: 'Job description' }, { icon: BarChart3, label: 'Hiring funnel' }, { icon: MoreHorizontal, label: 'More' }],
+  deep_research:      [{ icon: Search, label: 'Research a topic' }, { icon: Globe, label: 'Industry deep dive' }, { icon: BarChart3, label: 'Competitor analysis' }, { icon: Brain, label: 'Technology landscape' }],
 }
 
 const AGENT_COLORS: Record<string, string> = {
@@ -31,11 +32,12 @@ const AGENT_COLORS: Record<string, string> = {
   market_intelligence: '#8B5CF6',
   meeting:             '#F43F5E',
   hr_ops:              '#EC4899',
+  deep_research:       '#0EA5E9',
 }
 
 export default function ChatInterface() {
   const { activeAgentId } = useAgentStore()
-  const { messages, isTyping, inputValue, addMessage, setTyping, setInputValue } = useChatStore()
+  const { messages, isTyping, inputValue, addMessage, setTyping, setInputValue, clearMessages } = useChatStore()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -215,6 +217,23 @@ export default function ChatInterface() {
           display: 'flex', flexDirection: 'column'
         }}>
           <div style={{ maxWidth: 720, width: '100%', margin: '0 auto', padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Clear chat button */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <button
+                onClick={() => clearMessages(activeAgentId)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 11.5, color: 'var(--text-muted)', background: 'transparent',
+                  border: '1px solid var(--border-default)', borderRadius: 9999,
+                  padding: '4px 12px', cursor: 'pointer', transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#EF4444'; (e.currentTarget as HTMLElement).style.borderColor = '#EF444440' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
+              >
+                <Trash2 size={11} />
+                Clear conversation
+              </button>
+            </div>
             <AnimatePresence initial={false}>
               {agentMessages.map((msg) => (
                 <motion.div

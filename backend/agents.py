@@ -246,6 +246,40 @@ class NexOSAgents:
             )
         return self._agents['hr_ops']
 
+    # ── 8. Deep Research Agent ────────────────────────────────
+
+    @property
+    def deep_research(self) -> Agent:
+        if 'deep_research' not in self._agents:
+            self._agents['deep_research'] = Agent(
+                role='Deep Research Analyst',
+                goal=(
+                    'Conduct thorough, multi-source internet research on any topic and '
+                    'produce a comprehensive, well-structured research report with '
+                    'citations, key findings, data points, and strategic implications. '
+                    'Leave no stone unturned — go deep, not shallow.'
+                ),
+                backstory=(
+                    'You are an elite research analyst inside NexOS with the mindset of a '
+                    'McKinsey consultant and the thoroughness of an academic researcher. '
+                    'You never stop at the first result — you cross-reference multiple sources, '
+                    'verify facts, identify contradictions, and synthesize raw information into '
+                    'structured, insightful reports. You search the web extensively, visit '
+                    'actual pages to extract details, and always cite your sources with the '
+                    'publication name and date. Your reports follow a tight structure: '
+                    'Executive Summary → Key Findings → Data & Evidence → '
+                    'Expert Perspectives → Risks & Counterarguments → Strategic Implications. '
+                    'You write for founders who need clarity and depth, not fluff.'
+                ),
+                verbose=True,
+                allow_delegation=False,
+                tools=[self.search_tool, self.web_tool],
+                llm=os.getenv('MODEL_NAME', 'gpt-4o-mini'),
+                max_iter=15,
+                **self._agent_kwargs('deep_research'),
+            )
+        return self._agents['deep_research']
+
     # ── Lookup helper ─────────────────────────────────────────
 
     def get_agent(self, agent_type: str) -> Agent:
@@ -257,6 +291,7 @@ class NexOSAgents:
             'market_intelligence': self.market_intelligence,
             'meeting':             self.meeting,
             'hr_ops':              self.hr_ops,
+            'deep_research':       self.deep_research,
         }
         if agent_type not in mapping:
             raise ValueError(
@@ -269,4 +304,5 @@ class NexOSAgents:
         return [
             'orchestrator', 'sales', 'customer_service',
             'technical', 'market_intelligence', 'meeting', 'hr_ops',
+            'deep_research',
         ]

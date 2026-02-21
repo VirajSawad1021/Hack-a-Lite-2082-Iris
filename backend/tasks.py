@@ -211,6 +211,58 @@ class NexOSTasks:
             agent=agent,
         )
 
+    @staticmethod
+    def deep_research_task(message: str, agent: Agent) -> Task:
+        return Task(
+            description=dedent(f"""
+                You are the NexOS Deep Research Analyst.
+                The user has requested a research report on:
+
+                \"{message}\"
+
+                Your research process — follow every step:
+                1. **Search broadly**: Run at least 4-6 distinct searches using web search tool.
+                   Use varied queries to capture different angles of the topic.
+                2. **Go deep on top sources**: Visit the most promising URLs with the web scraper tool
+                   to extract actual data, quotes, statistics, and details.
+                3. **Cross-reference**: Look for conflicting information and note it.
+                4. **Cite everything**: Every factual claim must reference source + date.
+
+                Produce your final report with this EXACT structure using markdown:
+
+                ## Executive Summary
+                (3-5 sentences synthesizing the most important findings)
+
+                ## Key Findings
+                (5-8 bullet points, each a concrete, specific insight with supporting evidence)
+
+                ## Data & Evidence
+                (Tables, statistics, numbers — concrete data points with sources)
+
+                ## Expert Perspectives
+                (Quotes or stances from relevant experts, analysts, or organizations)
+
+                ## Risks & Counterarguments
+                (What could be wrong, what critics say, what uncertainties exist)
+
+                ## Strategic Implications
+                (What should the reader DO with this information — 3-5 actionable takeaways)
+
+                ## Sources
+                (Numbered list of all sources used: Title | Publication | Date | URL if available)
+
+                ---
+                Be thorough. Be specific. Never use vague statements when a concrete fact exists.
+                The report should be comprehensive enough to brief a board of directors.
+            """),
+            expected_output=(
+                "A comprehensive, well-structured research report in markdown format with all 6 sections. "
+                "Includes concrete data, citations, and strategic recommendations. "
+                "Minimum 600 words. Every factual claim is sourced."
+            ),
+            agent=agent,
+        )
+
     @classmethod
     def build(cls, agent_type: str, message: str, agent: Agent) -> Task:
         """Factory: returns the right task for the given agent_type."""
@@ -222,6 +274,7 @@ class NexOSTasks:
             'market_intelligence': cls.market_intelligence_task,
             'meeting':             cls.meeting_task,
             'hr_ops':              cls.hr_ops_task,
+            'deep_research':       cls.deep_research_task,
         }
         if agent_type not in dispatch:
             raise ValueError(f"No task defined for agent type: '{agent_type}'")

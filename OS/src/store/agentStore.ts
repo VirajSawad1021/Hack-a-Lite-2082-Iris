@@ -68,6 +68,15 @@ export const AGENTS: Agent[] = [
     unread_count: 0,
     current_task: 'Requires attention: new hire onboarding',
   },
+  {
+    id: 'deep_research',
+    type: 'deep_research',
+    name: 'Deep Research',
+    description: 'Multi-source internet research & comprehensive reports',
+    status: 'idle',
+    avatar_color: '#0EA5E9',
+    unread_count: 0,
+  },
 ]
 
 interface AgentStore {

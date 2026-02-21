@@ -133,6 +133,7 @@ _AGENT_TOOLS: dict[str, list[str]] = {
         "notion_create", "notion_search",
         "wa_send",
     ],
+    "deep_research": [],  # only uses search + web tools from agents.py
 }
 
 
@@ -158,6 +159,7 @@ _ENTERPRISE_APPS: dict[str, list[str]] = {
     "market_intelligence": [],
     "meeting":             ["slack", "gmail", "google_calendar", "notion"],
     "hr_ops":              ["gmail", "notion"],
+    "deep_research":       [],
 }
 
 

@@ -93,6 +93,11 @@ AGENT_META = {
         'description': 'Team management, hiring, operations',
         'avatar_color': '#EC4899',
     },
+    'deep_research': {
+        'name': 'Deep Research',
+        'description': 'Multi-source internet research with comprehensive reports',
+        'avatar_color': '#0EA5E9',
+    },
 }
 
 # ── Endpoints ─────────────────────────────────────────────────

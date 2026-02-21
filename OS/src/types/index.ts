@@ -1,4 +1,4 @@
-export type AgentType = 'orchestrator' | 'sales' | 'customer_service' | 'technical' | 'market_intelligence' | 'meeting' | 'hr_ops'
+export type AgentType = 'orchestrator' | 'sales' | 'customer_service' | 'technical' | 'market_intelligence' | 'meeting' | 'hr_ops' | 'deep_research'
 
 export type AgentStatus = 'idle' | 'working' | 'attention' | 'offline'
 
