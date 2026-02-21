@@ -434,15 +434,15 @@ export default function AgoraPage() {
           <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
             {session.messages.length === 0 && session.status === 'idle' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {/* Intro row */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {/* Section header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '-0.02em' }}>
-                      Available Agents
-                    </div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 3 }}>
-                      Select 2–4 on the left, then give them a goal and start
+                    <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 5 }}>
+                      7 specialized agents, one platform
+                    </p>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: '-0.02em' }}>
+                      Pick 2–4 agents to collaborate
                     </div>
                   </div>
                   <button onClick={() => setShowPresets(true)} style={{
@@ -454,8 +454,8 @@ export default function AgoraPage() {
                   </button>
                 </div>
 
-                {/* Agent cards grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                {/* White landing-page-style cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 12 }}>
                   {AGENTS.map((a, idx) => {
                     const Icon = a.icon
                     const on = selected.includes(a.type)
@@ -464,48 +464,61 @@ export default function AgoraPage() {
                         key={a.type}
                         initial={{ opacity: 0, y: 14 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.04, duration: 0.28 }}
+                        whileHover={{ y: -2 }}
+                        transition={{ delay: idx * 0.04, duration: 0.22 }}
                         onClick={() => toggleAgent(a.type)}
                         style={{
                           textAlign: 'left', padding: '16px', borderRadius: 12, cursor: 'pointer',
-                          background: on ? a.color + '12' : 'rgba(255,255,255,0.03)',
-                          border: on ? `1.5px solid ${a.color}45` : '1.5px solid rgba(255,255,255,0.07)',
-                          display: 'flex', flexDirection: 'column', gap: 10, transition: 'all 0.15s',
+                          background: on ? '#fff' : '#fff',
+                          border: on ? `2px solid ${a.color}` : '1px solid #e5e7eb',
+                          boxShadow: on
+                            ? `0 0 0 3px ${a.color}22, 0 4px 12px rgba(0,0,0,0.10)`
+                            : '0 1px 3px rgba(0,0,0,0.08)',
+                          display: 'flex', flexDirection: 'column', gap: 10,
+                          transition: 'box-shadow 0.15s, border 0.15s',
+                          outline: 'none',
                         }}
-                        onMouseEnter={e => { if (!on) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.055)' }}
-                        onMouseLeave={e => { if (!on) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)' }}
+                        onMouseEnter={e => {
+                          if (!on) (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.13)'
+                        }}
+                        onMouseLeave={e => {
+                          if (!on) (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'
+                        }}
                       >
-                        {/* Icon + check */}
+                        {/* Icon row */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{
-                            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                            background: a.color + (on ? '22' : '14'),
-                            border: `1.5px solid ${a.color}${on ? '55' : '25'}`,
+                            width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+                            background: a.color + '18',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}>
-                            <Icon size={17} color={a.color} />
+                            <Icon size={18} color={a.color} />
                           </div>
                           {on && (
                             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                              <CheckCircle2 size={15} color={a.color} />
+                              <CheckCircle2 size={16} color={a.color} />
                             </motion.div>
                           )}
                         </div>
 
-                        {/* Name + desc */}
+                        {/* Label + desc */}
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: on ? '#fff' : 'rgba(255,255,255,0.7)', marginBottom: 3, letterSpacing: '-0.01em' }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 3 }}>
                             {a.name}
                           </div>
-                          <div style={{ fontSize: 11, color: on ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.3)', lineHeight: 1.5 }}>
+                          <div style={{ fontSize: 12, color: '#6b7280' }}>
                             {a.desc}
                           </div>
                         </div>
 
-                        {/* Selected badge */}
+                        {/* Step badge when selected */}
                         {on && (
-                          <div style={{ fontSize: 11, fontWeight: 600, color: a.color, padding: '3px 8px', borderRadius: 6, background: a.color + '15', alignSelf: 'flex-start' }}>
-                            Step {selected.indexOf(a.type) + 1} of {selected.length}
+                          <div style={{
+                            alignSelf: 'flex-start', fontSize: 11, fontWeight: 600,
+                            color: a.color, padding: '2px 8px', borderRadius: 6,
+                            background: a.color + '14',
+                          }}>
+                            Step {selected.indexOf(a.type) + 1}
                           </div>
                         )}
                       </motion.button>
@@ -513,11 +526,11 @@ export default function AgoraPage() {
                   })}
                 </div>
 
-                {/* Subtle tip */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                {/* Tip strip */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <Sparkles size={12} color="rgba(99,102,241,0.6)" />
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)', lineHeight: 1.5 }}>
-                    Agents execute in sequence — each one reads the previous output and builds on it for a layered, multi-perspective result.
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', lineHeight: 1.5 }}>
+                    Agents run in sequence — each one reads the previous output and builds on it for a layered result.
                   </span>
                 </div>
               </div>
