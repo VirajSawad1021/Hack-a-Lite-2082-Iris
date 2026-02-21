@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Brain, TrendingUp, MessageSquare, Code2, Globe,
   Calendar, Users, Search, Network, ArrowLeft,
-  Play, Square, ChevronDown, ChevronUp, Sparkles, CheckCircle2,
-  Loader2, Bot, Lightbulb,
+  Square, ChevronDown, ChevronUp, Sparkles, CheckCircle2,
+  Loader2, Bot, Lightbulb, Heart, Repeat2, Share2, CornerDownRight,
+  Zap,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -227,7 +228,7 @@ export default function AgoraPage() {
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>Agora</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>Multi-agent collaboration</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>Agent communication space</div>
             </div>
           </div>
         </div>
@@ -379,34 +380,42 @@ export default function AgoraPage() {
         {/* Right panel: conversation */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-          {/* Run/Stop bar */}
+          {/* Feed topbar */}
           <div style={{
-            padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)',
+            padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+            background: 'rgba(255,255,255,0.015)',
           }}>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
-              {session.status === 'idle' && 'Pick a goal and 2–4 agents, then start the session'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {session.status === 'idle' && (
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>Select agents on the left and give them a goal →</span>
+              )}
               {session.status === 'running' && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#818cf8' }}>
-                  <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
-                  {session.currentAgent ? `${AGENT_MAP[session.currentAgent]?.name} is working…` : 'Starting…'}
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#818cf8', display: 'inline-block', boxShadow: '0 0 6px #818cf8', animation: 'pulse 1.2s ease-in-out infinite' }} />
+                  <span style={{ color: '#818cf8', fontWeight: 600 }}>Live</span>
+                  <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
+                  <span style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    {session.currentAgent ? `@${session.currentAgent.replace('_', '')} is posting…` : 'Starting session…'}
+                  </span>
                 </span>
               )}
               {session.status === 'complete' && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10B981' }}>
-                  <CheckCircle2 size={13} />
-                  Session complete — {session.messages.length} agents contributed
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                  <CheckCircle2 size={13} color="#10B981" />
+                  <span style={{ color: '#10B981', fontWeight: 600 }}>Session complete</span>
+                  <span style={{ color: 'rgba(255,255,255,0.3)' }}>· {session.messages.length} agents posted</span>
                 </span>
               )}
-              {session.status === 'error' && <span style={{ color: '#F43F5E' }}>{session.error}</span>}
+              {session.status === 'error' && <span style={{ fontSize: 12, color: '#F43F5E' }}>{session.error}</span>}
             </div>
             {isRunning ? (
               <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={stop} style={{
-                display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 8,
+                display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 20,
                 background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.25)',
-                color: '#F43F5E', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                color: '#F43F5E', fontSize: 12, fontWeight: 600, cursor: 'pointer',
               }}>
-                <Square size={12} /> Stop
+                <Square size={11} /> Stop
               </motion.button>
             ) : (
               <motion.button
@@ -414,18 +423,20 @@ export default function AgoraPage() {
                 whileTap={{ scale: goal.trim() && selected.length >= 2 ? 0.97 : 1 }}
                 onClick={run} disabled={!goal.trim() || selected.length < 2}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 7, padding: '8px 20px', borderRadius: 8,
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', borderRadius: 20,
                   background: goal.trim() && selected.length >= 2
                     ? 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)'
                     : 'rgba(255,255,255,0.06)',
                   border: 'none',
                   color: goal.trim() && selected.length >= 2 ? '#fff' : 'rgba(255,255,255,0.25)',
-                  fontSize: 13, fontWeight: 600,
+                  fontSize: 13, fontWeight: 700,
                   cursor: goal.trim() && selected.length >= 2 ? 'pointer' : 'not-allowed',
-                  boxShadow: goal.trim() && selected.length >= 2 ? '0 0 20px rgba(99,102,241,0.25)' : 'none',
-                  transition: 'all 0.15s',
+                  boxShadow: goal.trim() && selected.length >= 2 ? '0 0 16px rgba(99,102,241,0.3)' : 'none',
+                  transition: 'all 0.15s', letterSpacing: '-0.01em',
                 }}>
-                {session.status === 'complete' ? <><Sparkles size={13} /> Run Again</> : <><Play size={13} /> Start Session</>}
+                {session.status === 'complete'
+                  ? <><Sparkles size={12} /> Post Again</>
+                  : <><Zap size={12} /> Launch Space</>}
               </motion.button>
             )}
           </div>
@@ -540,55 +551,111 @@ export default function AgoraPage() {
               {session.messages.map((msg, idx) => {
                 const a = AGENT_MAP[msg.agent] ?? { icon: Bot, color: '#6366F1', name: msg.agentName, desc: '' }
                 const Icon = a.icon
-                const nextMsg = session.messages[idx + 1]
+                const prevMsg = session.messages[idx - 1]
+                const fakeEngagement = { likes: 12 + idx * 7, reposts: 3 + idx * 2 }
                 return (
-                  <motion.div key={msg.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                    {/* Agent header */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-                        background: msg.color + '20', border: `1.5px solid ${msg.color}40`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        {msg.streaming
-                          ? <Loader2 size={14} color={msg.color} style={{ animation: 'spin 1s linear infinite' }} />
-                          : <Icon size={14} color={msg.color} />
-                        }
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{msg.agentName}</span>
-                      <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 999, background: msg.color + '15', color: msg.color, fontWeight: 500 }}>
-                        {idx === 0 ? 'Leads' : `Step ${idx + 1}`}
-                      </span>
-                      {msg.complete && <CheckCircle2 size={13} color="#10B981" />}
-                    </div>
+                  <motion.div key={msg.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.32, ease: 'easeOut' }}>
 
-                    {/* Bubble */}
-                    <div style={{
-                      marginLeft: 42, background: 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${msg.color}20`, borderRadius: 12, borderTopLeftRadius: 4,
-                      padding: '14px 18px',
-                    }}>
-                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.75, fontFamily: 'inherit' }}>
-                        {msg.text}
-                        {msg.streaming && (
-                          <motion.span
-                            animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.55 }}
-                            style={{ display: 'inline-block', width: 2, height: '1em', background: msg.color, marginLeft: 2, verticalAlign: 'text-bottom' }}
-                          />
-                        )}
-                      </pre>
-                    </div>
-
-                    {/* Handoff line */}
-                    {nextMsg && (
-                      <div style={{ marginLeft: 58, marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ height: 1, width: 20, background: 'rgba(255,255,255,0.07)' }} />
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)' }}>
-                          hands off to {AGENT_MAP[nextMsg.agent]?.name ?? '…'}
+                    {/* Reply-to banner */}
+                    {prevMsg && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, marginLeft: 20 }}>
+                        <CornerDownRight size={12} color="rgba(255,255,255,0.2)" />
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
+                          replying to{' '}
+                          <span style={{ color: AGENT_MAP[prevMsg.agent]?.color ?? '#818cf8', fontWeight: 600 }}>
+                            @{prevMsg.agent.replace('_', '')}
+                          </span>
                         </span>
-                        <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.07)' }} />
                       </div>
                     )}
+
+                    {/* Social post card */}
+                    <div style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${msg.color}18`,
+                      borderRadius: 14,
+                      padding: '16px 18px',
+                      position: 'relative',
+                      transition: 'border-color 0.2s',
+                    }}>
+                      {/* Accent left bar */}
+                      <div style={{ position: 'absolute', left: 0, top: 16, bottom: 16, width: 3, borderRadius: '0 2px 2px 0', background: msg.color + '60' }} />
+
+                      {/* Post header */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+                        {/* Round avatar */}
+                        <div style={{
+                          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                          background: `linear-gradient(135deg, ${msg.color}30, ${msg.color}15)`,
+                          border: `2px solid ${msg.color}50`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {msg.streaming
+                            ? <Loader2 size={16} color={msg.color} style={{ animation: 'spin 1s linear infinite' }} />
+                            : <Icon size={16} color={msg.color} />
+                          }
+                        </div>
+
+                        {/* Name + handle + time */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>{msg.agentName}</span>
+                            <span style={{ fontSize: 12, color: msg.color, fontWeight: 600 }}>@{msg.agent.replace('_', '')}</span>
+                            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)' }}>·</span>
+                            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>just now</span>
+                            <span style={{ marginLeft: 'auto', fontSize: 11, padding: '2px 8px', borderRadius: 20,
+                              background: idx === 0 ? msg.color + '20' : 'rgba(255,255,255,0.06)',
+                              color: idx === 0 ? msg.color : 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
+                              {idx === 0 ? '✦ Leads' : `Step ${idx + 1}`}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', marginTop: 1 }}>{a.desc}</div>
+                        </div>
+                      </div>
+
+                      {/* Post body */}
+                      <div style={{ paddingLeft: 52 }}>
+                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 13.5, color: 'rgba(255,255,255,0.85)', lineHeight: 1.75, fontFamily: 'inherit' }}>
+                          {msg.text}
+                          {msg.streaming && (
+                            <motion.span
+                              animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.55 }}
+                              style={{ display: 'inline-block', width: 2, height: '1.1em', background: msg.color, marginLeft: 3, verticalAlign: 'text-bottom', borderRadius: 1 }}
+                            />
+                          )}
+                        </pre>
+
+                        {/* Engagement row */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          <button style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: 12, padding: 0 }}
+                            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#f43f5e')}
+                            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.25)')}
+                          >
+                            <Heart size={13} /> {msg.complete ? fakeEngagement.likes : ''}
+                          </button>
+                          <button style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: 12, padding: 0 }}
+                            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#10b981')}
+                            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.25)')}
+                          >
+                            <Repeat2 size={13} /> {msg.complete ? fakeEngagement.reposts : ''}
+                          </button>
+                          <button style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: 12, padding: 0 }}
+                            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#818cf8')}
+                            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.25)')}
+                          >
+                            <Share2 size={13} />
+                          </button>
+                          {msg.complete && (
+                            <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#10B981' }}>
+                              <CheckCircle2 size={11} /> Done
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </motion.div>
                 )
               })}
@@ -596,13 +663,18 @@ export default function AgoraPage() {
 
             {session.status === 'complete' && session.messages.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 10,
+                display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderRadius: 12,
                 background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)',
               }}>
-                <CheckCircle2 size={16} color="#10B981" />
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>
-                  All {session.messages.length} agents completed — layered, multi-perspective output ready.
-                </span>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', border: '1.5px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <CheckCircle2 size={15} color="#10B981" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#10B981' }}>Space closed</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
+                    {session.messages.length} agents posted · layered, multi-perspective output ready
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -613,6 +685,7 @@ export default function AgoraPage() {
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
         textarea::placeholder { color: rgba(255,255,255,0.18); }
         * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
       `}</style>
