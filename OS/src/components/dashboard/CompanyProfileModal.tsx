@@ -143,7 +143,7 @@ export default function CompanyProfileModal({ open, onClose }: Props) {
                 <Input
                   value={profile.company_name}
                   onChange={v => set('company_name', v)}
-                  placeholder="e.g. NexOS"
+                  placeholder="e.g. Engram"
                 />
               </Row>
 

@@ -44,7 +44,7 @@ const FIELDS: {
   {
     key: 'company_name',
     label: 'Company Name',
-    placeholder: 'e.g. NexOS',
+    placeholder: 'e.g. Engram',
   },
   {
     key: 'tagline',
@@ -248,7 +248,7 @@ export default function CompanyProfilePage() {
                 Startup Details
               </div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>
-                Shared with all 8 NexOS agents on every request
+                Shared with all 8 Engram agents on every request
               </div>
             </div>
           </div>

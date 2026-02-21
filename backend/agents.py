@@ -8,9 +8,9 @@ from crewai_tools import SerperDevTool, WebsiteSearchTool
 from tools.integrations import get_integration_tools, get_enterprise_apps
 
 
-class NexOSAgents:
+class EngramAgents:
     """
-    All 7 NexOS specialized agents.
+    All 7 Engram specialized agents.
     Maps 1-to-1 with the frontend agentStore types:
       orchestrator | sales | customer_service | technical |
       market_intelligence | meeting | hr_ops

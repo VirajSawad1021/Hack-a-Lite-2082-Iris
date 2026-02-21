@@ -94,7 +94,7 @@ export default function ChatInterface() {
     setStreamingState({ events: [], finalText: '', isDone: false })
 
     try {
-      // ── SSE streaming to NexOS backend ────────────────────
+      // ── SSE streaming to Engram backend ────────────────────
       const res = await fetch('http://localhost:8001/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -151,7 +151,7 @@ export default function ChatInterface() {
       saveMessage('agent', agentReply)  // fire-and-forget to Supabase
     } catch (err) {
       // ── Fallback — backend offline ─────────────────────────
-      console.warn('[NexOS] Stream unavailable, using simulation:', err)
+      console.warn('[Engram] Stream unavailable, using simulation:', err)
       setStreamingState(null)
       await new Promise(r => setTimeout(r, 900 + Math.random() * 600))
       setTyping(activeAgentId, false)

@@ -74,7 +74,7 @@ export default function AgentSidebar({ collapsed, onToggle }: SidebarProps) {
             }}>
               <Brain size={13} color="white" />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>nexos</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>engram</span>
           </div>
         )}
         <button onClick={onToggle} style={{

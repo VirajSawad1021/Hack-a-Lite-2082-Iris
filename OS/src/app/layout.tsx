@@ -18,11 +18,11 @@ const instrumentSerif = Instrument_Serif({
 })
 
 export const metadata: Metadata = {
-  title: 'NexOS — Multi-Agent AI for Startups',
+  title: 'Engram — Multi-Agent AI for Startups',
   description: 'Your startup\'s AI command center. Orchestrate Sales, Support, Engineering, Market Intelligence, and more — from one interface.',
-  keywords: ['AI', 'startup', 'agents', 'orchestration', 'NexOS'],
+  keywords: ['AI', 'startup', 'agents', 'orchestration', 'Engram'],
   openGraph: {
-    title: 'NexOS',
+    title: 'Engram',
     description: 'Multi-Agent AI for Startups',
     type: 'website',
   },

@@ -16,7 +16,7 @@ from typing import Optional, List
 from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain_openai import ChatOpenAI
 from crewai import Crew, Process
-from agents import NexOSAgents
+from agents import EngramAgents
 from tasks import NexOSTasks
 from company_context import load_profile, save_profile as _save_profile
 
@@ -196,7 +196,7 @@ async def chat(request: ChatRequest):
         )
 
     try:
-        nexos = NexOSAgents()
+        nexos = EngramAgents()
         agent = nexos.get_agent(agent_type)
         task  = NexOSTasks.build(agent_type, request.message, agent)
 
@@ -282,7 +282,7 @@ async def chat_stream(request: ChatRequest):
                 api_key=os.getenv('OPENAI_API_KEY'),
             )
 
-            nexos   = NexOSAgents(llm=streaming_llm)
+            nexos   = EngramAgents(llm=streaming_llm)
             agent   = nexos.get_agent(agent_type)
             agent.step_callback = step_callback
             task    = NexOSTasks.build(agent_type, request.message, agent)

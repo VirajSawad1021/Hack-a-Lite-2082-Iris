@@ -65,7 +65,7 @@ export default function LoginPage() {
           <div style={{ width: 32, height: 32, background: '#1A1A1A', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Brain size={18} color="white" />
           </div>
-          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>nexos</span>
+          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>engram</span>
         </div>
 
         {/* Heading */}

@@ -64,7 +64,7 @@ export default function LandingPage() {
         <a href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'inherit', textDecoration: 'none', transition: 'color 0.12s' }}
            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>
-          NexOS agents are now live  start orchestrating your startup&apos;s AI workforce
+          Engram agents are now live — start orchestrating your startup&apos;s AI workforce
           <ChevronRight size={14} />
         </a>
       </div>
@@ -83,13 +83,13 @@ export default function LandingPage() {
           }}>
             <Brain size={16} color="white" />
           </div>
-          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>nexos</span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>engram</span>
         </div>
 
         {/* Center links */}
         <div style={{ display: 'flex', gap: 6 }}>
-          {['Features', 'Agents', 'Pricing', 'Docs'].map(l => (
-            <a key={l} href="#" className="nav-link" style={{ padding: '5px 10px', borderRadius: 6 }}
+          {[['Features', '#'], ['Agents', '#'], ['Pricing', '#pricing'], ['Docs', '#']].map(([l, href]) => (
+            <a key={l} href={href} className="nav-link" style={{ padding: '5px 10px', borderRadius: 6 }}
                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-landing-card)')}
                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
               {l}
@@ -272,6 +272,108 @@ export default function LandingPage() {
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 3 }}>{label}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{desc}</div>
             </motion.button>
+          ))}
+        </div>
+      </section>
+
+      {/*  Pricing  */}
+      <section id="pricing" style={{ padding: '64px 32px 80px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', textAlign: 'center', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Pricing
+        </p>
+        <h2 style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+          Plans for every stage
+        </h2>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 40 }}>
+          Start free. Scale when you&apos;re ready.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+          {([
+            {
+              name: 'Free',
+              price: 'NPR 0',
+              period: '/month',
+              highlight: false,
+              badge: null as string | null,
+              good: 'Solo founders just exploring',
+              features: [
+                '1 agent — Meeting Agent only',
+                'Up to 3 meeting transcriptions/month',
+                'Basic auto-generated minutes',
+              ],
+            },
+            {
+              name: 'Pro',
+              price: 'NPR 1,499',
+              period: '/month',
+              highlight: true,
+              badge: 'Most popular' as string | null,
+              good: 'Early-stage teams of 2–5',
+              features: [
+                '3 agents (Sales + CS + Technical)',
+                'Unlimited meeting transcription',
+                'Weekly auto-reports',
+                'Basic NEXUS GRID access',
+              ],
+            },
+            {
+              name: 'Pro Plus',
+              price: 'NPR 3,999',
+              period: '/month',
+              highlight: false,
+              badge: null as string | null,
+              good: 'Funded or scaling startups',
+              features: [
+                'All 7 agents',
+                'Full NEXUS GRID + MATCH (investor discovery)',
+                'Market intelligence monitoring',
+                'Custom report templates',
+                'Priority investor matching',
+              ],
+            },
+          ] as const).map(({ name, price, period, highlight, badge, good, features }) => (
+            <div key={name} style={{
+              padding: '28px 24px', borderRadius: 16,
+              border: highlight ? '1.5px solid #1A1A1A' : '1px solid var(--border-default)',
+              background: highlight ? '#1A1A1A' : 'var(--bg-white)',
+              boxShadow: highlight ? '0 8px 32px rgba(0,0,0,0.12)' : 'var(--shadow-sm)',
+              display: 'flex', flexDirection: 'column', position: 'relative',
+            }}>
+              {badge && (
+                <div style={{
+                  position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
+                  background: '#1A1A1A', color: '#fff', fontSize: 11, fontWeight: 600,
+                  padding: '3px 12px', borderRadius: 999, whiteSpace: 'nowrap',
+                }}>
+                  {badge}
+                </div>
+              )}
+              <div style={{ fontSize: 12, fontWeight: 600, color: highlight ? 'rgba(255,255,255,0.45)' : 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{name}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginBottom: 4 }}>
+                <span style={{ fontSize: 26, fontWeight: 700, color: highlight ? '#fff' : 'var(--text-primary)', letterSpacing: '-0.03em' }}>{price}</span>
+                <span style={{ fontSize: 13, color: highlight ? 'rgba(255,255,255,0.4)' : 'var(--text-muted)' }}>{period}</span>
+              </div>
+              <div style={{ fontSize: 12, color: highlight ? 'rgba(255,255,255,0.35)' : 'var(--text-muted)', marginBottom: 22 }}>Good for: {good}</div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
+                {features.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: highlight ? 'rgba(255,255,255,0.72)' : 'var(--text-secondary)' }}>
+                    <span style={{ flexShrink: 0, marginTop: 1, color: highlight ? '#fff' : 'var(--text-primary)', fontWeight: 700 }}>✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/signup" style={{
+                display: 'block', textAlign: 'center', padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                background: highlight ? 'rgba(255,255,255,0.1)' : '#1A1A1A',
+                color: '#fff', textDecoration: 'none',
+                border: highlight ? '1px solid rgba(255,255,255,0.15)' : 'none',
+                transition: 'background 0.12s',
+              }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = highlight ? 'rgba(255,255,255,0.18)' : '#2E2E2E')}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = highlight ? 'rgba(255,255,255,0.1)' : '#1A1A1A')}>
+                {name === 'Free' ? 'Get started free' : 'Get started'}
+              </Link>
+            </div>
           ))}
         </div>
       </section>
