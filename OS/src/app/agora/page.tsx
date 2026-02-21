@@ -1,344 +1,540 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Brain, Network, Search, TrendingUp, Users, Star, ArrowRight, Globe, DollarSign, Zap } from 'lucide-react'
+import {
+  Brain, TrendingUp, MessageSquare, Code2, Globe,
+  Calendar, Users, Search, Network, ArrowLeft,
+  Play, Square, ChevronDown, ChevronUp, Sparkles, CheckCircle2,
+  Loader2, Bot, Lightbulb,
+} from 'lucide-react'
 import Link from 'next/link'
-import { AgoraProfile } from '@/types'
 
-const MOCK_PROFILES: AgoraProfile[] = [
-  { id: '1', name: 'FinanTech AI', type: 'startup', sector: 'FinTech', stage: 'Series A', location: 'SF', traction_score: 92, connections: 134, bio: 'AI-driven underwriting for SMB loans. $4M ARR, growing 30% MoM.', recent_activity: 'Closed $8M Series A' },
-  { id: '2', name: 'Sequoia Capital', type: 'investor', sector: 'Generalist', location: 'Menlo Park', traction_score: 99, connections: 2400, bio: 'Early-stage to growth. Looking for AI infra and climate tech.', recent_activity: 'Deployed $200M in Q4' },
-  { id: '3', name: 'HealthOS', type: 'startup', sector: 'HealthTech', stage: 'Seed', location: 'NYC', traction_score: 78, connections: 56, bio: 'Patient data platform for mid-size clinics. HIPAA compliant.', recent_activity: 'Launched in 3 new states' },
-  { id: '4', name: 'a16z Bio', type: 'investor', sector: 'BioTech', location: 'SF', traction_score: 97, connections: 1800, bio: 'Bio + AI convergence. $1.5B dedicated fund.', recent_activity: 'Published bio AI thesis' },
-  { id: '5', name: 'SpaceLogic', type: 'startup', sector: 'DeepTech', stage: 'Pre-Seed', location: 'Austin', traction_score: 65, connections: 23, bio: 'Satellite-based supply chain intelligence for agriculture.', recent_activity: 'Filed 2 patents' },
-  { id: '6', name: 'CloudNest', type: 'startup', sector: 'Infrastructure', stage: 'Series B', location: 'London', traction_score: 88, connections: 210, bio: 'Multi-cloud orchestration for enterprise. $12M ARR.', recent_activity: 'EMEA expansion launch' },
-  { id: '7', name: 'Lightspeed', type: 'investor', sector: 'Generalist', location: 'SF', traction_score: 96, connections: 1600, bio: 'Enterprise SaaS, consumer, and deep tech investments.', recent_activity: 'New $7B global fund' },
-  { id: '8', name: 'EdPath AI', type: 'startup', sector: 'EdTech', stage: 'Seed', location: 'Chicago', traction_score: 70, connections: 45, bio: 'Personalized K-12 learning paths via AI tutors.', recent_activity: 'Pilot with 200 schools' },
+// ── Agent registry ────────────────────────────────────────────
+const AGENTS = [
+  { type: 'orchestrator',        name: 'Orchestrator',     icon: Brain,         color: '#6366F1', desc: 'Strategy & coordination' },
+  { type: 'sales',               name: 'Sales',            icon: TrendingUp,    color: '#06B6D4', desc: 'Pipeline & outreach' },
+  { type: 'customer_service',    name: 'Customer Service', icon: MessageSquare, color: '#10B981', desc: 'Support & retention' },
+  { type: 'technical',           name: 'Technical',        icon: Code2,         color: '#F59E0B', desc: 'Engineering & systems' },
+  { type: 'market_intelligence', name: 'Market Intel',     icon: Globe,         color: '#8B5CF6', desc: 'Trends & competitors' },
+  { type: 'meeting',             name: 'Meeting',          icon: Calendar,      color: '#F43F5E', desc: 'Planning & summaries' },
+  { type: 'hr_ops',              name: 'HR & Ops',         icon: Users,         color: '#EC4899', desc: 'People & operations' },
+  { type: 'deep_research',       name: 'Deep Research',    icon: Search,        color: '#0EA5E9', desc: 'Multi-source research' },
 ]
 
-const TRENDING: { topic: string; count: number; trend: 'up' | 'stable' }[] = [
-  { topic: 'AI Infrastructure', count: 84, trend: 'up' },
-  { topic: 'Climate FinTech', count: 62, trend: 'up' },
-  { topic: 'Health AI', count: 58, trend: 'stable' },
-  { topic: 'Dev Tools', count: 51, trend: 'up' },
-  { topic: 'Embedded Finance', count: 44, trend: 'up' },
-  { topic: 'Robotics', count: 37, trend: 'stable' },
+const AGENT_MAP = Object.fromEntries(AGENTS.map(a => [a.type, a]))
+
+// ── Preset goals ─────────────────────────────────────────────
+const PRESETS = [
+  {
+    label: 'Go-to-Market Plan',
+    goal: 'Create a comprehensive go-to-market plan for our product launch next quarter — covering target segments, outreach strategy, pricing, and success metrics.',
+    agents: ['orchestrator', 'sales', 'market_intelligence'],
+  },
+  {
+    label: 'Hiring Strategy',
+    goal: 'We need to hire 3 engineers and a growth lead in the next 60 days. Create a full hiring plan: JDs, pipeline, interview process, and offer structure.',
+    agents: ['hr_ops', 'orchestrator', 'technical'],
+  },
+  {
+    label: 'Customer Churn Analysis',
+    goal: 'We lost 4 enterprise customers last month. Analyze the likely causes, draft a win-back plan, and suggest product/support improvements.',
+    agents: ['customer_service', 'sales', 'market_intelligence'],
+  },
+  {
+    label: 'Competitor Deep Dive',
+    goal: 'Run a full competitive analysis on our top 3 competitors — product gaps, pricing, recent moves, and how we should position against them.',
+    agents: ['market_intelligence', 'deep_research', 'orchestrator'],
+  },
+  {
+    label: 'Sprint Planning',
+    goal: 'Plan the next 2-week engineering sprint. Prioritise features, identify blockers, set team capacity, and draft stakeholder update.',
+    agents: ['technical', 'meeting', 'hr_ops'],
+  },
 ]
 
-function ProfileCard({ profile, i }: { profile: AgoraProfile; i: number }) {
-  const [expanded, setExpanded] = useState(false)
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: i * 0.07, duration: 0.4 }}
-      whileHover={{ y: -3, transition: { type: 'spring', stiffness: 400, damping: 25 } }}
-      style={{
-        background: 'var(--bg-white)',
-        borderRadius: 16, padding: 20, cursor: 'pointer',
-        border: profile.type === 'investor'
-          ? '1px solid rgba(139,92,246,0.18)'
-          : '1px solid rgba(6,182,212,0.18)',
-        boxShadow: 'var(--shadow-sm)',
-        transition: 'box-shadow 0.2s, border-color 0.2s'
-      }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)'
-        ;(e.currentTarget as HTMLElement).style.borderColor = profile.type === 'investor'
-          ? 'rgba(139,92,246,0.35)' : 'rgba(6,182,212,0.35)'
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-sm)'
-        ;(e.currentTarget as HTMLElement).style.borderColor = profile.type === 'investor'
-          ? 'rgba(139,92,246,0.18)' : 'rgba(6,182,212,0.18)'
-      }}
-      onClick={() => setExpanded(!expanded)}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-start gap-3">
-          <div style={{
-            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 15, fontWeight: 700,
-            background: profile.type === 'investor' ? 'rgba(139,92,246,0.10)' : 'rgba(6,182,212,0.10)',
-            border: `1.5px solid ${profile.type === 'investor' ? 'rgba(139,92,246,0.25)' : 'rgba(6,182,212,0.25)'}`,
-            color: profile.type === 'investor' ? '#7C3AED' : '#0891B2'
-          }}>
-            {profile.name.charAt(0)}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{profile.name}</h3>
-              <span style={{
-                fontSize: 11, padding: '2px 8px', borderRadius: 9999, fontWeight: 500,
-                background: profile.type === 'investor' ? 'rgba(139,92,246,0.10)' : 'rgba(6,182,212,0.10)',
-                color: profile.type === 'investor' ? '#7C3AED' : '#0891B2'
-              }}>
-                {profile.type}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <Globe className="w-3 h-3" style={{ color: 'var(--text-muted)' }} />
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {profile.location} · {profile.sector} {profile.stage ? `· ${profile.stage}` : ''}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Traction score */}
-        <div className="text-right flex-shrink-0">
-          <div className="flex items-center gap-1 justify-end">
-            <Star className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{profile.traction_score}</span>
-          </div>
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{profile.connections} connections</span>
-        </div>
-      </div>
-
-      <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--text-secondary)' }}>{profile.bio}</p>
-
-      {/* Recent activity */}
-      <div className="flex items-center gap-2 mb-4">
-        <Zap className="w-3.5 h-3.5 text-amber-500" />
-        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{profile.recent_activity}</span>
-      </div>
-
-      {/* Actions */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="flex gap-2" style={{ borderTop: '1px solid var(--border-default)', paddingTop: 16 }}>
-              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                className="flex-1 flex items-center justify-center gap-2 text-sm py-2.5 rounded-xl font-medium text-white"
-                style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)', border: 'none', cursor: 'pointer' }}>
-                <Network className="w-4 h-4" /> Request Intro
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                className="flex-1 flex items-center justify-center gap-2 text-sm py-2.5 rounded-xl font-medium"
-                style={{
-                  border: '1px solid var(--border-default)', background: 'var(--bg-landing)',
-                  color: 'var(--text-secondary)', cursor: 'pointer'
-                }}>
-                View Profile <ArrowRight className="w-4 h-4" />
-              </motion.button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  )
+// ── Types ─────────────────────────────────────────────────────
+interface Message {
+  id: string
+  agent: string
+  agentName: string
+  color: string
+  text: string
+  streaming: boolean
+  complete: boolean
 }
 
+interface SessionState {
+  status: 'idle' | 'running' | 'complete' | 'error'
+  messages: Message[]
+  currentAgent: string | null
+  error: string
+}
+
+// ── Main page ─────────────────────────────────────────────────
 export default function AgoraPage() {
-  const [filter, setFilter] = useState<'all' | 'startup' | 'investor'>('all')
-  const [sectorFilter, setSectorFilter] = useState('All')
+  const [goal, setGoal] = useState('')
+  const [selected, setSelected] = useState<string[]>(['orchestrator', 'market_intelligence', 'sales'])
+  const [session, setSession] = useState<SessionState>({
+    status: 'idle', messages: [], currentAgent: null, error: '',
+  })
+  const [showPresets, setShowPresets] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
-  const sectors = ['All', ...Array.from(new Set(MOCK_PROFILES.map(p => p.sector)))]
+  const scrollToBottom = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
 
-  const filtered = MOCK_PROFILES.filter(p =>
-    (filter === 'all' || p.type === filter) &&
-    (sectorFilter === 'All' || p.sector === sectorFilter)
-  )
+  useEffect(() => { scrollToBottom() }, [session.messages, scrollToBottom])
+
+  const toggleAgent = (type: string) => {
+    setSelected(prev =>
+      prev.includes(type)
+        ? prev.length > 2 ? prev.filter(t => t !== type) : prev
+        : prev.length < 4 ? [...prev, type] : prev
+    )
+  }
+
+  const applyPreset = (p: typeof PRESETS[0]) => {
+    setGoal(p.goal)
+    setSelected(p.agents)
+    setShowPresets(false)
+  }
+
+  const stop = useCallback(() => {
+    setSession(s => ({
+      ...s,
+      status: s.status === 'running' ? 'complete' : s.status,
+      currentAgent: null,
+    }))
+  }, [])
+
+  const handleEvent = useCallback((evt: Record<string, unknown>) => {
+    switch (evt.type) {
+      case 'agent_start': {
+        const at = evt.agent as string
+        const msgId = `${at}-${Date.now()}`
+        setSession(s => ({
+          ...s,
+          currentAgent: at,
+          messages: [...s.messages, {
+            id: msgId, agent: at,
+            agentName: evt.agent_name as string,
+            color: evt.avatar_color as string,
+            text: '', streaming: true, complete: false,
+          }],
+        }))
+        break
+      }
+      case 'text_chunk': {
+        const at = evt.agent as string
+        setSession(s => ({
+          ...s,
+          messages: s.messages.map(m =>
+            m.agent === at && m.streaming ? { ...m, text: m.text + (evt.content as string) } : m
+          ),
+        }))
+        break
+      }
+      case 'agent_complete': {
+        const at = evt.agent as string
+        setSession(s => ({
+          ...s,
+          messages: s.messages.map(m =>
+            m.agent === at && m.streaming ? { ...m, streaming: false, complete: true } : m
+          ),
+        }))
+        break
+      }
+      case 'session_complete':
+        setSession(s => ({ ...s, status: 'complete', currentAgent: null }))
+        break
+      case 'error':
+        setSession(s => ({ ...s, status: 'error', error: evt.content as string, currentAgent: null }))
+        break
+      case 'done':
+        setSession(s => ({ ...s, status: s.status === 'running' ? 'complete' : s.status, currentAgent: null }))
+        break
+    }
+  }, [])
+
+  const run = useCallback(async () => {
+    if (!goal.trim() || selected.length < 2) return
+    setSession({ status: 'running', messages: [], currentAgent: null, error: '' })
+
+    try {
+      const response = await fetch('http://localhost:8001/agora/collaborate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal: goal.trim(), agent_types: selected }),
+      })
+      if (!response.ok) {
+        const err = await response.text()
+        setSession(s => ({ ...s, status: 'error', error: err }))
+        return
+      }
+
+      const reader = response.body!.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const parts = buf.split('\n\n')
+        buf = parts.pop() ?? ''
+        for (const part of parts) {
+          const line = part.trim()
+          if (!line.startsWith('data:')) continue
+          try { handleEvent(JSON.parse(line.slice(5).trim())) } catch { /* skip */ }
+        }
+      }
+    } catch (e: unknown) {
+      setSession(s => ({
+        ...s, status: 'error',
+        error: e instanceof Error ? e.message : 'Connection failed — is the backend running?',
+      }))
+    }
+  }, [goal, selected, handleEvent])
+
+  const isRunning = session.status === 'running'
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-landing)' }}>
+    <div style={{ minHeight: '100vh', background: '#0A0A0F', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Nav */}
+      {/* Header */}
       <header style={{
-        background: 'var(--bg-white)', borderBottom: '1px solid var(--border-default)',
-        position: 'sticky', top: 0, zIndex: 40
+        background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.07)',
+        padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
       }}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #6366F1, #06B6D4)' }}>
-                <Brain className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold" style={{ color: 'var(--text-primary)' }}>NexOS</span>
-            </Link>
-            <div className="h-4 w-px" style={{ background: 'var(--border-default)' }} />
-            <div className="flex items-center gap-2">
-              <Network className="w-4 h-4" style={{ color: '#8B5CF6' }} />
-              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Agora</span>
-              <span className="text-xs px-2 py-0.5 rounded-full" style={{
-                background: 'rgba(139,92,246,0.10)', color: '#7C3AED',
-                border: '1px solid rgba(139,92,246,0.25)'
-              }}>Beta</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+            <button style={{
+              width: 34, height: 34, borderRadius: 9, border: '1px solid rgba(255,255,255,0.09)',
+              background: 'rgba(255,255,255,0.04)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)',
+            }}>
+              <ArrowLeft size={15} />
+            </button>
+          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 9,
+              background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Network size={16} color="#fff" />
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>Agora</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>Multi-agent collaboration</div>
             </div>
           </div>
-          <Link href="/dashboard">
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 16px', borderRadius: 12, fontSize: 13,
-                border: '1px solid var(--border-default)', background: 'var(--bg-white)',
-                color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.12s'
-              }}>
-              ← Back to Dashboard
-            </motion.button>
-          </Link>
+        </div>
+        {/* Live agent pulse indicators */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {selected.map(type => {
+            const a = AGENT_MAP[type]; const Icon = a.icon; const active = session.currentAgent === type
+            return (
+              <motion.div key={type}
+                animate={active ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+                transition={active ? { repeat: Infinity, duration: 1.1 } : {}}
+                title={a.name}
+                style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  background: active ? a.color + '25' : 'rgba(255,255,255,0.04)',
+                  border: `1.5px solid ${active ? a.color + '70' : 'rgba(255,255,255,0.08)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
+                }}>
+                <Icon size={13} color={active ? a.color : 'rgba(255,255,255,0.3)'} />
+              </motion.div>
+            )
+          })}
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* Hero */}
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }} className="text-center mb-12">
-          <span className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-full mb-5" style={{
-            background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', color: '#7C3AED'
-          }}>
-            <Network className="w-3.5 h-3.5" /> Agent Social Network
-          </span>
-          <h1 className="text-5xl font-black mb-4 leading-tight" style={{ color: 'var(--text-primary)' }}>
-            Discover & Connect<br />
-            <span style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              through your AI agents
-            </span>
-          </h1>
-          <p className="text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-            Your NexOS agents network on your behalf — surfacing the right investors, partners, and collaborators.
-          </p>
-        </motion.div>
+        {/* Left panel */}
+        <div style={{
+          width: 310, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.07)',
+          display: 'flex', flexDirection: 'column', padding: 20, gap: 20, overflowY: 'auto',
+        }}>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-
-          {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-5">
-
-            {/* Stats */}
-            <div style={{
-              background: 'var(--bg-white)', borderRadius: 16,
-              border: '1px solid var(--border-default)', padding: 20
+          {/* Goal */}
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+              Collaboration Goal
+            </label>
+            <textarea
+              value={goal} onChange={e => setGoal(e.target.value)} disabled={isRunning} rows={5}
+              placeholder="What should the agents work on together? Be specific — describe the problem, context, and desired output…"
+              style={{
+                width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '10px 12px',
+                color: 'rgba(255,255,255,0.88)', fontSize: 13, resize: 'none', outline: 'none',
+                fontFamily: 'inherit', lineHeight: 1.6, opacity: isRunning ? 0.5 : 1,
+              }}
+              onFocus={e => (e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)')}
+            />
+            <button onClick={() => setShowPresets(v => !v)} style={{
+              display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, background: 'none',
+              border: 'none', color: '#6366F1', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0,
             }}>
-              <div className="space-y-4">
-                {[
-                  { label: 'Active Agents', value: '4,218', icon: Users, color: '#06B6D4' },
-                  { label: 'Connections Made', value: '12,901', icon: Network, color: '#8B5CF6' },
-                  { label: 'Funding Raised', value: '$2.4B', icon: DollarSign, color: '#10B981' },
-                ].map(({ label, value, icon: Icon, color }) => (
-                  <div key={label} className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: color + '12', border: `1.5px solid ${color}28` }}>
-                      <Icon className="w-4 h-4" style={{ color }} />
-                    </div>
-                    <div>
-                      <div className="font-bold" style={{ color: 'var(--text-primary)' }}>{value}</div>
-                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</div>
-                    </div>
+              <Lightbulb size={12} />
+              Example scenarios
+              {showPresets ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+            <AnimatePresence>
+              {showPresets && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', marginTop: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {PRESETS.map(p => (
+                      <button key={p.label} onClick={() => applyPreset(p)} style={{
+                        textAlign: 'left', background: 'rgba(99,102,241,0.06)',
+                        border: '1px solid rgba(99,102,241,0.15)', borderRadius: 8,
+                        padding: '8px 11px', color: 'rgba(255,255,255,0.75)', fontSize: 12, cursor: 'pointer',
+                      }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.12)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.06)')}
+                      >
+                        <div style={{ fontWeight: 600, color: '#818cf8', marginBottom: 2 }}>{p.label}</div>
+                        <div style={{ fontSize: 11, opacity: 0.7 }}>{p.agents.map(t => AGENT_MAP[t]?.name).join(' → ')}</div>
+                      </button>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-            {/* Trending Topics */}
-            <div style={{
-              background: 'var(--bg-white)', borderRadius: 16,
-              border: '1px solid var(--border-default)', padding: 20
-            }}>
-              <h3 className="text-xs font-semibold uppercase tracking-widest mb-4"
-                style={{ color: 'var(--text-muted)' }}>
-                Trending Topics
-              </h3>
-              <div className="space-y-1">
-                {TRENDING.map((t, i) => (
-                  <motion.div key={t.topic}
-                    initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + i * 0.06 }}
-                    className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors cursor-pointer"
-                    style={{ transition: 'background 0.1s' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-landing)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>#{i + 1}</span>
-                      <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{t.topic}</span>
+          {/* Agent picker */}
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+              Select Agents <span style={{ color: 'rgba(255,255,255,0.25)', fontWeight: 400, textTransform: 'none' }}>(2–4)</span>
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {AGENTS.map(a => {
+                const Icon = a.icon; const on = selected.includes(a.type); const active = session.currentAgent === a.type
+                return (
+                  <button key={a.type} onClick={() => !isRunning && toggleAgent(a.type)} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 9,
+                    border: 'none', background: on ? a.color + '15' : 'rgba(255,255,255,0.03)',
+                    outline: on ? `1.5px solid ${a.color}40` : '1.5px solid transparent',
+                    cursor: isRunning ? 'default' : 'pointer', transition: 'all 0.12s', textAlign: 'left',
+                  }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+                      background: on ? a.color + '20' : 'rgba(255,255,255,0.06)',
+                      border: active ? `1.5px solid ${a.color}` : 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {active
+                        ? <Loader2 size={13} color={a.color} style={{ animation: 'spin 1s linear infinite' }} />
+                        : <Icon size={13} color={on ? a.color : 'rgba(255,255,255,0.3)'} />
+                      }
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{t.count}</span>
-                      {t.trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: on ? '#fff' : 'rgba(255,255,255,0.4)', letterSpacing: '-0.01em' }}>{a.name}</div>
+                      <div style={{ fontSize: 11, color: on ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)' }}>{a.desc}</div>
                     </div>
-                  </motion.div>
-                ))}
-              </div>
+                    {on && <CheckCircle2 size={14} color={a.color} />}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
-          {/* Main content */}
-          <div className="lg:col-span-3 space-y-5">
-
-            {/* Search + filters */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                <input placeholder="Search startups, investors, sectors..."
-                  style={{
-                    width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 10, paddingBottom: 10,
-                    borderRadius: 12, fontSize: 14, border: '1px solid var(--border-input)',
-                    background: 'var(--bg-white)', color: 'var(--text-primary)', outline: 'none',
-                    transition: 'border-color 0.15s'
-                  }}
-                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
-                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-input)')}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                {(['all', 'startup', 'investor'] as const).map(f => (
-                  <button key={f} onClick={() => setFilter(f)}
-                    style={{
-                      padding: '8px 16px', borderRadius: 12, fontSize: 13,
-                      fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer',
-                      border: filter === f ? '1px solid rgba(139,92,246,0.4)' : '1px solid var(--border-default)',
-                      background: filter === f ? 'rgba(139,92,246,0.10)' : 'var(--bg-white)',
-                      color: filter === f ? '#7C3AED' : 'var(--text-secondary)',
-                      transition: 'all 0.12s'
-                    }}>
-                    {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
-                  </button>
-                ))}
-              </div>
+          {/* Flow preview */}
+          {selected.length >= 2 && (
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+                Execution Flow
+              </label>
+              {selected.map((type, i) => {
+                const a = AGENT_MAP[type]; const Icon = a.icon
+                return (
+                  <div key={type}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, background: a.color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon size={12} color={a.color} />
+                      </div>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>{a.name}</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)' }}>
+                        {i === 0 ? 'leads' : i === selected.length - 1 ? 'finalises' : 'builds on above'}
+                      </span>
+                    </div>
+                    {i < selected.length - 1 && (
+                      <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', marginLeft: 13 }} />
+                    )}
+                  </div>
+                )
+              })}
             </div>
+          )}
+        </div>
 
-            {/* Sector filter */}
-            <div className="flex flex-wrap gap-2">
-              {sectors.map(sector => (
-                <button key={sector} onClick={() => setSectorFilter(sector)}
-                  style={{
-                    padding: '5px 12px', borderRadius: 9999, fontSize: 12,
-                    fontWeight: 500, cursor: 'pointer',
-                    border: sectorFilter === sector ? '1px solid rgba(139,92,246,0.4)' : '1px solid var(--border-default)',
-                    background: sectorFilter === sector ? 'rgba(139,92,246,0.10)' : 'var(--bg-white)',
-                    color: sectorFilter === sector ? '#7C3AED' : 'var(--text-secondary)',
-                    transition: 'all 0.12s'
-                  }}>
-                  {sector}
-                </button>
-              ))}
-            </div>
+        {/* Right panel: conversation */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-            {/* Profile cards grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <AnimatePresence mode="popLayout">
-                {filtered.map((profile, i) => (
-                  <ProfileCard key={profile.id} profile={profile} i={i} />
-                ))}
-              </AnimatePresence>
-              {filtered.length === 0 && (
-                <div className="col-span-2 text-center py-16 rounded-2xl"
-                  style={{ border: '1px solid var(--border-default)', background: 'var(--bg-white)' }}>
-                  <Network className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
-                  <p style={{ color: 'var(--text-secondary)' }}>No agents match your filters</p>
-                </div>
+          {/* Run/Stop bar */}
+          <div style={{
+            padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+          }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
+              {session.status === 'idle' && 'Pick a goal and 2–4 agents, then start the session'}
+              {session.status === 'running' && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#818cf8' }}>
+                  <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                  {session.currentAgent ? `${AGENT_MAP[session.currentAgent]?.name} is working…` : 'Starting…'}
+                </span>
               )}
+              {session.status === 'complete' && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10B981' }}>
+                  <CheckCircle2 size={13} />
+                  Session complete — {session.messages.length} agents contributed
+                </span>
+              )}
+              {session.status === 'error' && <span style={{ color: '#F43F5E' }}>{session.error}</span>}
             </div>
+            {isRunning ? (
+              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={stop} style={{
+                display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 8,
+                background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.25)',
+                color: '#F43F5E', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}>
+                <Square size={12} /> Stop
+              </motion.button>
+            ) : (
+              <motion.button
+                whileHover={{ scale: goal.trim() && selected.length >= 2 ? 1.03 : 1 }}
+                whileTap={{ scale: goal.trim() && selected.length >= 2 ? 0.97 : 1 }}
+                onClick={run} disabled={!goal.trim() || selected.length < 2}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7, padding: '8px 20px', borderRadius: 8,
+                  background: goal.trim() && selected.length >= 2
+                    ? 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)'
+                    : 'rgba(255,255,255,0.06)',
+                  border: 'none',
+                  color: goal.trim() && selected.length >= 2 ? '#fff' : 'rgba(255,255,255,0.25)',
+                  fontSize: 13, fontWeight: 600,
+                  cursor: goal.trim() && selected.length >= 2 ? 'pointer' : 'not-allowed',
+                  boxShadow: goal.trim() && selected.length >= 2 ? '0 0 20px rgba(99,102,241,0.25)' : 'none',
+                  transition: 'all 0.15s',
+                }}>
+                {session.status === 'complete' ? <><Sparkles size={13} /> Run Again</> : <><Play size={13} /> Start Session</>}
+              </motion.button>
+            )}
+          </div>
+
+          {/* Messages */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+            {session.messages.length === 0 && session.status === 'idle' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, minHeight: 300 }}>
+                <div style={{ width: 54, height: 54, borderRadius: 16, background: 'rgba(99,102,241,0.1)', border: '1.5px solid rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Network size={26} color="#6366F1" />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>Agent collaboration</div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', lineHeight: 1.7, maxWidth: 340 }}>
+                    Each agent reads the previous agents&apos; output and builds on it — giving you a layered, multi-perspective answer.<br /><br />
+                    Pick a goal, choose 2–4 agents, and hit Start.
+                  </div>
+                </div>
+                <button onClick={() => setShowPresets(true)} style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8,
+                  background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
+                  color: '#818cf8', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}>
+                  <Lightbulb size={13} /> See example scenarios
+                </button>
+              </div>
+            )}
+
+            <AnimatePresence initial={false}>
+              {session.messages.map((msg, idx) => {
+                const a = AGENT_MAP[msg.agent] ?? { icon: Bot, color: '#6366F1', name: msg.agentName, desc: '' }
+                const Icon = a.icon
+                const nextMsg = session.messages[idx + 1]
+                return (
+                  <motion.div key={msg.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                    {/* Agent header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                        background: msg.color + '20', border: `1.5px solid ${msg.color}40`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {msg.streaming
+                          ? <Loader2 size={14} color={msg.color} style={{ animation: 'spin 1s linear infinite' }} />
+                          : <Icon size={14} color={msg.color} />
+                        }
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{msg.agentName}</span>
+                      <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 999, background: msg.color + '15', color: msg.color, fontWeight: 500 }}>
+                        {idx === 0 ? 'Leads' : `Step ${idx + 1}`}
+                      </span>
+                      {msg.complete && <CheckCircle2 size={13} color="#10B981" />}
+                    </div>
+
+                    {/* Bubble */}
+                    <div style={{
+                      marginLeft: 42, background: 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${msg.color}20`, borderRadius: 12, borderTopLeftRadius: 4,
+                      padding: '14px 18px',
+                    }}>
+                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.75, fontFamily: 'inherit' }}>
+                        {msg.text}
+                        {msg.streaming && (
+                          <motion.span
+                            animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.55 }}
+                            style={{ display: 'inline-block', width: 2, height: '1em', background: msg.color, marginLeft: 2, verticalAlign: 'text-bottom' }}
+                          />
+                        )}
+                      </pre>
+                    </div>
+
+                    {/* Handoff line */}
+                    {nextMsg && (
+                      <div style={{ marginLeft: 58, marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ height: 1, width: 20, background: 'rgba(255,255,255,0.07)' }} />
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)' }}>
+                          hands off to {AGENT_MAP[nextMsg.agent]?.name ?? '…'}
+                        </span>
+                        <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.07)' }} />
+                      </div>
+                    )}
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
+
+            {session.status === 'complete' && session.messages.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 10,
+                background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)',
+              }}>
+                <CheckCircle2 size={16} color="#10B981" />
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>
+                  All {session.messages.length} agents completed — layered, multi-perspective output ready.
+                </span>
+              </motion.div>
+            )}
+
+            <div ref={bottomRef} />
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        textarea::placeholder { color: rgba(255,255,255,0.18); }
+        * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+      `}</style>
     </div>
   )
 }
