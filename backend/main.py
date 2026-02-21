@@ -13,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
+from langchain.callbacks.base import BaseCallbackHandler
+from langchain_openai import ChatOpenAI
 from crewai import Crew, Process
 from agents import NexOSAgents
 from tasks import NexOSTasks
@@ -99,6 +101,25 @@ AGENT_META = {
         'avatar_color': '#0EA5E9',
     },
 }
+
+# ── Real-time token streaming callback ───────────────────────
+
+class TokenQueueCallback(BaseCallbackHandler):
+    """
+    LangChain callback that pipes every LLM token into an SSE queue
+    the moment it is generated — before the full response is complete.
+    """
+    def __init__(self, q: queue.Queue):
+        super().__init__()
+        self.q = q
+
+    def on_llm_new_token(self, token: str, **kwargs):
+        if token:
+            self.q.put({'type': 'text_chunk', 'content': token})
+
+    def on_llm_error(self, error, **kwargs):
+        self.q.put({'type': 'error', 'content': str(error)})
+
 
 # ── Endpoints ─────────────────────────────────────────────────
 
@@ -226,7 +247,17 @@ async def chat_stream(request: ChatRequest):
     # ── Run the crew in a background thread ──────────────────
     def run_crew():
         try:
-            nexos   = NexOSAgents()
+            # Build a real streaming LLM — tokens flow into event_q the
+            # moment the model generates them, not after completion.
+            streaming_llm = ChatOpenAI(
+                model=os.getenv('MODEL_NAME', 'gpt-4o-mini'),
+                streaming=True,
+                callbacks=[TokenQueueCallback(event_q)],
+                temperature=float(os.getenv('MODEL_TEMPERATURE', '0.7')),
+                api_key=os.getenv('OPENAI_API_KEY'),
+            )
+
+            nexos   = NexOSAgents(llm=streaming_llm)
             agent   = nexos.get_agent(agent_type)
             agent.step_callback = step_callback
             task    = NexOSTasks.build(agent_type, request.message, agent)
@@ -239,17 +270,7 @@ async def chat_stream(request: ChatRequest):
             result = crew.kickoff()
             result_text = str(result).strip()
 
-            # ── Stream the answer word-by-word for live typewriter effect ──
-            words = result_text.split(' ')
-            chunk_size = 3
-            for i in range(0, len(words), chunk_size):
-                chunk = ' '.join(words[i:i + chunk_size])
-                # add space between chunks but not trailing space on last
-                if i + chunk_size < len(words):
-                    chunk += ' '
-                event_q.put({'type': 'text_chunk', 'content': chunk})
-                time.sleep(0.04)   # ~25 chunks/sec
-
+            # Send the complete assembled text so the frontend can save it
             event_q.put({'type': 'final_answer', 'content': result_text})
         except Exception as e:
             import traceback; traceback.print_exc()

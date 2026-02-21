@@ -16,10 +16,13 @@ class NexOSAgents:
       market_intelligence | meeting | hr_ops
     """
 
-    def __init__(self):
+    def __init__(self, llm=None):
         self._search_tool = None
         self._web_tool = None
         self._agents: dict = {}
+        # Accept an injected LLM (e.g. a streaming ChatOpenAI instance);
+        # fall back to the model name string so CrewAI auto-resolves it.
+        self._llm = llm if llm is not None else os.getenv('MODEL_NAME', 'gpt-4o-mini')
 
     def _agent_kwargs(self, agent_type: str) -> dict:
         """Inject apps=[] if CREWAI_PLATFORM_INTEGRATION_TOKEN is set and crewai supports it."""
@@ -71,7 +74,7 @@ class NexOSAgents:
                 verbose=True,
                 allow_delegation=False,
                 tools=[self.search_tool, *get_integration_tools('orchestrator')],
-                llm=os.getenv('MODEL_NAME', 'gpt-4o-mini'),
+                llm=self._llm,
                 **self._agent_kwargs('orchestrator'),
             )
         return self._agents['orchestrator']
@@ -99,7 +102,7 @@ class NexOSAgents:
                 verbose=True,
                 allow_delegation=False,
                 tools=[self.search_tool, self.web_tool, *get_integration_tools('sales')],
-                llm=os.getenv('MODEL_NAME', 'gpt-4o-mini'),
+                llm=self._llm,
                 **self._agent_kwargs('sales'),
             )
         return self._agents['sales']
@@ -127,7 +130,7 @@ class NexOSAgents:
                 verbose=True,
                 allow_delegation=False,
                 tools=[self.search_tool, *get_integration_tools('customer_service')],
-                llm=os.getenv('MODEL_NAME', 'gpt-4o-mini'),
+                llm=self._llm,
                 **self._agent_kwargs('customer_service'),
             )
         return self._agents['customer_service']
@@ -155,7 +158,7 @@ class NexOSAgents:
                 verbose=True,
                 allow_delegation=False,
                 tools=[self.search_tool, self.web_tool, *get_integration_tools('technical')],
-                llm=os.getenv('MODEL_NAME', 'gpt-4o-mini'),
+                llm=self._llm,
                 **self._agent_kwargs('technical'),
             )
         return self._agents['technical']
@@ -183,7 +186,7 @@ class NexOSAgents:
                 verbose=True,
                 allow_delegation=False,
                 tools=[self.search_tool, self.web_tool, *get_integration_tools('market_intelligence')],
-                llm=os.getenv('MODEL_NAME', 'gpt-4o-mini'),
+                llm=self._llm,
                 **self._agent_kwargs('market_intelligence'),
             )
         return self._agents['market_intelligence']
@@ -212,7 +215,7 @@ class NexOSAgents:
                 verbose=True,
                 allow_delegation=False,
                 tools=[self.search_tool, *get_integration_tools('meeting')],
-                llm=os.getenv('MODEL_NAME', 'gpt-4o-mini'),
+                llm=self._llm,
                 **self._agent_kwargs('meeting'),
             )
         return self._agents['meeting']
@@ -241,7 +244,7 @@ class NexOSAgents:
                 verbose=True,
                 allow_delegation=False,
                 tools=[self.search_tool, self.web_tool, *get_integration_tools('hr_ops')],
-                llm=os.getenv('MODEL_NAME', 'gpt-4o-mini'),
+                llm=self._llm,
                 **self._agent_kwargs('hr_ops'),
             )
         return self._agents['hr_ops']
@@ -274,7 +277,7 @@ class NexOSAgents:
                 verbose=True,
                 allow_delegation=False,
                 tools=[self.search_tool, self.web_tool],
-                llm=os.getenv('MODEL_NAME', 'gpt-4o-mini'),
+                llm=self._llm,
                 max_iter=15,
                 **self._agent_kwargs('deep_research'),
             )
