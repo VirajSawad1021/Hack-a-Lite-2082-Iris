@@ -170,14 +170,14 @@ export default function ChatInterface() {
           >
             {/* Agent name badge */}
             <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '8px 16px', borderRadius: 9999,
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              padding: '11px 22px', borderRadius: 9999,
               background: color + '12', border: `1.5px solid ${color}35`,
-              marginBottom: 24, boxShadow: `0 0 0 4px ${color}08`
+              marginBottom: 24, boxShadow: `0 0 0 6px ${color}08`
             }}>
-              <div style={{ width: 9, height: 9, borderRadius: '50%', background: color, flexShrink: 0 }} />
+              <div style={{ width: 11, height: 11, borderRadius: '50%', background: color, flexShrink: 0 }} />
               <span style={{
-                fontSize: 13.5, fontWeight: 600, letterSpacing: '-0.01em',
+                fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em',
                 color: color, fontFamily: 'var(--font-inter, Inter, system-ui, sans-serif)'
               }}>
                 {activeAgent.name}
