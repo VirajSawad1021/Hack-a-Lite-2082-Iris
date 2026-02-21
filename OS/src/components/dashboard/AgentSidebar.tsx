@@ -6,7 +6,7 @@ import {
   Brain, PenLine, Bot, Search, Library, Plus,
   ChevronDown, ChevronRight, TrendingUp, MessageSquare,
   Code2, Globe, Calendar, Users, Settings, PanelLeftClose, PanelLeftOpen,
-  ChevronLeft, LogOut, Bell, Clock, Building2
+  ChevronLeft, LogOut, Bell, Clock, Building2, LayoutGrid
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAgentStore, AGENTS } from '@/store/agentStore'
@@ -114,11 +114,19 @@ export default function AgentSidebar({ collapsed, onToggle }: SidebarProps) {
           {!collapsed && <span className="sidebar-item-text" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>Search</span>}
         </button>
 
-        {/* Library */}
+        {/* Library / Agora */}
         <Link href="/agora" style={{ textDecoration: 'none' }}>
           <button className="sidebar-item" style={{ width: '100%', justifyContent: collapsed ? 'center' : 'flex-start' }}>
             <Library size={15} style={{ flexShrink: 0 }} />
             {!collapsed && <span className="sidebar-item-text" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>Agora</span>}
+          </button>
+        </Link>
+
+        {/* Trello */}
+        <Link href="/trello" style={{ textDecoration: 'none' }}>
+          <button className="sidebar-item" style={{ width: '100%', justifyContent: collapsed ? 'center' : 'flex-start' }}>
+            <LayoutGrid size={15} style={{ flexShrink: 0 }} />
+            {!collapsed && <span className="sidebar-item-text" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>Trello Calls</span>}
           </button>
         </Link>
       </div>
