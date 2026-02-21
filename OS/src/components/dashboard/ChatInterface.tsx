@@ -544,7 +544,7 @@ export default function ChatInterface() {
               {dbConnected ? 'Synced' : 'Local'}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              {['CRM', 'Slack', 'Calendar', 'GitHub'].map(t => (
+              {['CRM', 'Calendar', 'GitHub'].map(t => (
                 <button key={t} style={{
                   fontSize: 11, padding: '2px 8px', borderRadius: 9999,
                   border: '1px solid var(--border-default)', background: 'transparent',
