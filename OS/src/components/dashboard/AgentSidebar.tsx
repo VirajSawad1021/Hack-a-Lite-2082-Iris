@@ -19,6 +19,7 @@ const AGENT_ICONS: Record<string, React.ElementType> = {
   market_intelligence: Globe,
   meeting:            Calendar,
   hr_ops:             Users,
+  deep_research:      Search,
 }
 
 const AGENT_COLORS: Record<string, string> = {
@@ -29,6 +30,7 @@ const AGENT_COLORS: Record<string, string> = {
   market_intelligence: '#8B5CF6',
   meeting:             '#F43F5E',
   hr_ops:              '#EC4899',
+  deep_research:       '#0EA5E9',
 }
 
 interface SidebarProps {

@@ -3,9 +3,20 @@
 -- Migration: 004_add_deep_research.sql
 -- Run in Supabase SQL Editor AFTER 003_realtime_and_functions.sql
 -- ============================================================
+--
+-- ⚠️  PostgreSQL REQUIRES two separate executions:
+--    STEP 1: Run ONLY the ALTER TYPE line below, then click Run.
+--    STEP 2: Delete/comment-out the ALTER TYPE line, uncomment
+--            the rest, and click Run again.
+--
+-- The ALTER TYPE ADD VALUE must be committed in its own
+-- transaction before the new enum value can be used in DML.
+-- ============================================================
 
--- 1. Extend the agent_type enum
+-- ── STEP 1 ── Paste ONLY this line into Supabase SQL Editor and click Run:
 ALTER TYPE agent_type ADD VALUE IF NOT EXISTS 'deep_research';
+
+-- ── STEP 2 ── After Step 1 succeeds, paste everything below and click Run again:
 
 -- 2. Provision 'deep_research' agent for ALL existing users who don't have it yet
 INSERT INTO public.agents (user_id, type, name, description, avatar_color)

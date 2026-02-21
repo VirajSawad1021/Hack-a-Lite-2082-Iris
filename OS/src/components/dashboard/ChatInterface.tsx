@@ -6,12 +6,13 @@ import {
   Plus, ArrowUp, Paperclip, Mic, MoreHorizontal,
   TrendingUp, PenLine, BarChart3, Calendar, Code2,
   Globe, MessageSquare, Brain, Users, Zap, Link2,
-  Search, AlertCircle, CheckCircle2, Loader2, Trash2, Cloud
+  Search, AlertCircle, CheckCircle2, Loader2, Trash2, Cloud, Clock, X, MessageCircle
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAgentStore, AGENTS } from '@/store/agentStore'
 import { useChatStore } from '@/store/chatStore'
 import { useChatPersistence } from '@/lib/hooks/useChatPersistence'
+import { useConversationHistory } from '@/lib/hooks/useConversationHistory'
 import type { StreamEvent } from '@/types'
 
 const AGENT_QUICK_ACTIONS: Record<string, { icon: React.ElementType; label: string }[]> = {
@@ -48,6 +49,9 @@ export default function ChatInterface() {
   const actions = AGENT_QUICK_ACTIONS[activeAgent.type] ?? []
   const typing = isTyping[activeAgentId] ?? false
 
+  // History panel visibility
+  const [showHistory, setShowHistory] = useState(false)
+
   // Streaming state — lives in component so it auto-clears per agent switch
   interface StreamState {
     events: StreamEvent[]
@@ -57,7 +61,14 @@ export default function ChatInterface() {
   const [streamingState, setStreamingState] = useState<StreamState | null>(null)
 
   // Supabase persistence — saves every message + rehydrates from DB on fresh browser
-  const { saveMessage, connected: dbConnected } = useChatPersistence(activeAgentId, activeAgent.type)
+  const { saveMessage, connected: dbConnected, switchConversation } = useChatPersistence(activeAgentId, activeAgent.type)
+
+  // Conversation history list from Supabase
+  const { conversations, loading: historyLoading, loadConversation } = useConversationHistory(
+    activeAgent.type,
+    activeAgentId,
+    switchConversation,
+  )
 
   // Reset streaming when switching agents
   useEffect(() => { setStreamingState(null) }, [activeAgentId])
@@ -165,6 +176,163 @@ export default function ChatInterface() {
       flex: 1, display: 'flex', flexDirection: 'column',
       background: 'var(--bg-landing)', overflow: 'hidden', position: 'relative'
     }}>
+
+      {/* ── Conversation History Panel ─────────────────────── */}
+      <AnimatePresence>
+        {showHistory && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="history-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setShowHistory(false)}
+              style={{
+                position: 'absolute', inset: 0, zIndex: 40,
+                background: 'rgba(0,0,0,0.28)',
+              }}
+            />
+            {/* Drawer */}
+            <motion.div
+              key="history-drawer"
+              initial={{ x: '100%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '100%', opacity: 0 }}
+              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                position: 'absolute', top: 0, right: 0, bottom: 0,
+                width: 320, background: 'var(--bg-white)',
+                borderLeft: '1px solid var(--border-default)',
+                zIndex: 41, display: 'flex', flexDirection: 'column',
+                boxShadow: '-12px 0 40px rgba(0,0,0,0.12)',
+              }}
+            >
+              {/* Drawer header */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '16px 16px 14px', borderBottom: '1px solid var(--border-default)',
+                flexShrink: 0,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 8,
+                    background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Clock size={14} color={color} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                      History
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      {activeAgent.name} · {conversations.length} conversations
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  style={{
+                    width: 26, height: 26, borderRadius: 7, border: 'none',
+                    background: 'transparent', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--text-muted)', transition: 'background 0.12s',
+                  }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-landing)')}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Conversation list */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
+                {historyLoading ? (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '40px 0', flexDirection: 'column', gap: 10,
+                  }}>
+                    <Loader2 size={18} color="var(--text-muted)" style={{ animation: 'spin 1s linear infinite' }} />
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Loading history…</span>
+                  </div>
+                ) : conversations.length === 0 ? (
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    padding: '40px 16px', gap: 10, textAlign: 'center',
+                  }}>
+                    <MessageCircle size={28} color="var(--text-muted)" style={{ opacity: 0.4 }} />
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                      No past conversations yet
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-muted)', opacity: 0.7 }}>
+                      Start chatting and your history will appear here.
+                    </div>
+                  </div>
+                ) : (
+                  conversations.map((conv) => {
+                    const date = new Date(conv.updated_at)
+                    const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+                    const label = conv.title ?? conv.summary ?? conv.last_message ?? 'Conversation'
+
+                    return (
+                      <button
+                        key={conv.id}
+                        onClick={async () => {
+                          await loadConversation(conv.id)
+                          setShowHistory(false)
+                        }}
+                        style={{
+                          width: '100%', textAlign: 'left', padding: '10px 12px',
+                          borderRadius: 10, border: 'none', cursor: 'pointer',
+                          background: 'transparent', marginBottom: 2,
+                          transition: 'background 0.12s',
+                        }}
+                        onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-landing)')}
+                        onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{
+                            width: 30, height: 30, borderRadius: 8, flexShrink: 0, marginTop: 1,
+                            background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <MessageCircle size={13} color={color} />
+                          </div>
+                          <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <div style={{
+                              fontSize: 12.5, fontWeight: 600,
+                              color: 'var(--text-primary)', letterSpacing: '-0.01em',
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                              marginBottom: 2,
+                            }}>
+                              {label.length > 55 ? label.slice(0, 52) + '…' : label}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                {dateStr} · {timeStr}
+                              </span>
+                              {conv.message_count > 0 && (
+                                <span style={{
+                                  fontSize: 10, color: 'var(--text-muted)',
+                                  background: 'var(--bg-landing)', borderRadius: 9999,
+                                  padding: '1px 6px', border: '1px solid var(--border-default)',
+                                }}>
+                                  {conv.message_count} msg{conv.message_count !== 1 ? 's' : ''}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/*  Empty state: centered Manus-style  */}
       <AnimatePresence mode="wait">
@@ -348,6 +516,24 @@ export default function ChatInterface() {
             Connect your tools to {activeAgent.name}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* History button */}
+            <button
+              onClick={() => setShowHistory(v => !v)}
+              title="View conversation history"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4, fontSize: 11,
+                color: showHistory ? color : 'var(--text-muted)',
+                background: showHistory ? color + '12' : 'transparent',
+                border: showHistory ? `1px solid ${color}35` : '1px solid transparent',
+                borderRadius: 9999, padding: '3px 9px', cursor: 'pointer',
+                transition: 'all 0.15s',
+                borderRight: '1px solid var(--border-default)',
+                paddingRight: 10, marginRight: 0,
+              }}
+            >
+              <Clock size={11} />
+              History
+            </button>
             {/* Cloud persistence badge */}
             <div title={dbConnected ? 'Chat history saved to cloud' : 'Saving to localStorage only (log in to sync across devices)'} style={{
               display: 'flex', alignItems: 'center', gap: 4,

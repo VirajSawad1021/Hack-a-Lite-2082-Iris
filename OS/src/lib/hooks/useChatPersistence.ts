@@ -26,6 +26,8 @@ interface UseChatPersistenceReturn {
   loaded: boolean
   /** True if the user is authenticated and the agent row was found in Supabase. */
   connected: boolean
+  /** Switch the active conversation (call after loading a past conversation from history). */
+  switchConversation: (id: string) => void
 }
 
 export function useChatPersistence(
@@ -142,5 +144,6 @@ export function useChatPersistence(
     saveMessage,
     loaded,
     connected: !!dbAgentId,
+    switchConversation: setConversationId,
   }
 }

@@ -13,6 +13,8 @@ interface ChatStore {
   setInputValue: (val: string) => void
   clearMessages: (agentId: string) => void
   clearAllMessages: () => void
+  /** Replace all messages for an agent (used when loading a past conversation) */
+  setMessages: (agentId: string, msgs: Message[]) => void
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -51,6 +53,11 @@ export const useChatStore = create<ChatStore>()(
         })),
 
       clearAllMessages: () => set({ messages: {} }),
+
+      setMessages: (agentId, msgs) =>
+        set((state) => ({
+          messages: { ...state.messages, [agentId]: msgs },
+        })),
     }),
     {
       name: 'nexos-chat-history',   // localStorage key
