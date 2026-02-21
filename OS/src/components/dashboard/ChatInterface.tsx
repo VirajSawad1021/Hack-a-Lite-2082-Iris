@@ -6,11 +6,12 @@ import {
   Plus, ArrowUp, Paperclip, Mic, MoreHorizontal,
   TrendingUp, PenLine, BarChart3, Calendar, Code2,
   Globe, MessageSquare, Brain, Users, Zap, Link2,
-  Search, AlertCircle, CheckCircle2, Loader2, Trash2
+  Search, AlertCircle, CheckCircle2, Loader2, Trash2, Cloud
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAgentStore, AGENTS } from '@/store/agentStore'
 import { useChatStore } from '@/store/chatStore'
+import { useChatPersistence } from '@/lib/hooks/useChatPersistence'
 import type { StreamEvent } from '@/types'
 
 const AGENT_QUICK_ACTIONS: Record<string, { icon: React.ElementType; label: string }[]> = {
@@ -55,6 +56,9 @@ export default function ChatInterface() {
   }
   const [streamingState, setStreamingState] = useState<StreamState | null>(null)
 
+  // Supabase persistence — saves every message + rehydrates from DB on fresh browser
+  const { saveMessage, connected: dbConnected } = useChatPersistence(activeAgentId, activeAgent.type)
+
   // Reset streaming when switching agents
   useEffect(() => { setStreamingState(null) }, [activeAgentId])
 
@@ -74,6 +78,7 @@ export default function ChatInterface() {
     if (!content) return
     setInputValue('')
     addMessage(activeAgentId, { role: 'user', content, content_type: 'text' })
+    saveMessage('user', content)  // fire-and-forget to Supabase
     setTyping(activeAgentId, true)
     setStreamingState({ events: [], finalText: '', isDone: false })
 
@@ -126,22 +131,26 @@ export default function ChatInterface() {
 
       setTyping(activeAgentId, false)
       setStreamingState(null)
+      const agentReply = finalAnswer || 'Task complete.'
       addMessage(activeAgentId, {
         role: 'agent',
-        content: finalAnswer || 'Task complete.',
+        content: agentReply,
         content_type: 'text',
       })
+      saveMessage('agent', agentReply)  // fire-and-forget to Supabase
     } catch (err) {
       // ── Fallback — backend offline ─────────────────────────
       console.warn('[NexOS] Stream unavailable, using simulation:', err)
       setStreamingState(null)
       await new Promise(r => setTimeout(r, 900 + Math.random() * 600))
       setTyping(activeAgentId, false)
+      const simReply = getSimulatedReply(activeAgent.type, content)
       addMessage(activeAgentId, {
         role: 'agent',
-        content: getSimulatedReply(activeAgent.type, content),
+        content: simReply,
         content_type: 'text',
       })
+      saveMessage('agent', simReply)  // fire-and-forget to Supabase
     }
   }
 
@@ -338,18 +347,29 @@ export default function ChatInterface() {
             <Link2 size={12} />
             Connect your tools to {activeAgent.name}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {['CRM', 'Slack', 'Calendar', 'GitHub'].map(t => (
-              <button key={t} style={{
-                fontSize: 11, padding: '2px 8px', borderRadius: 9999,
-                border: '1px solid var(--border-default)', background: 'transparent',
-                cursor: 'pointer', color: 'var(--text-muted)', transition: 'all 0.12s'
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = color; (e.currentTarget as HTMLElement).style.color = color }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)' }}>
-                {t}
-              </button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Cloud persistence badge */}
+            <div title={dbConnected ? 'Chat history saved to cloud' : 'Saving to localStorage only (log in to sync across devices)'} style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              fontSize: 11, color: dbConnected ? '#10B981' : 'var(--text-muted)',
+              borderRight: '1px solid var(--border-default)', paddingRight: 10,
+            }}>
+              <Cloud size={11} />
+              {dbConnected ? 'Synced' : 'Local'}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {['CRM', 'Slack', 'Calendar', 'GitHub'].map(t => (
+                <button key={t} style={{
+                  fontSize: 11, padding: '2px 8px', borderRadius: 9999,
+                  border: '1px solid var(--border-default)', background: 'transparent',
+                  cursor: 'pointer', color: 'var(--text-muted)', transition: 'all 0.12s'
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = color; (e.currentTarget as HTMLElement).style.color = color }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)' }}>
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
