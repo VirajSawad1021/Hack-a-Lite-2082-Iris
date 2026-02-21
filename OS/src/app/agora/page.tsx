@@ -434,24 +434,92 @@ export default function AgoraPage() {
           <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
             {session.messages.length === 0 && session.status === 'idle' && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, minHeight: 300 }}>
-                <div style={{ width: 54, height: 54, borderRadius: 16, background: 'rgba(99,102,241,0.1)', border: '1.5px solid rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Network size={26} color="#6366F1" />
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>Agent collaboration</div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', lineHeight: 1.7, maxWidth: 340 }}>
-                    Each agent reads the previous agents&apos; output and builds on it — giving you a layered, multi-perspective answer.<br /><br />
-                    Pick a goal, choose 2–4 agents, and hit Start.
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Intro row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '-0.02em' }}>
+                      Available Agents
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 3 }}>
+                      Select 2–4 on the left, then give them a goal and start
+                    </div>
                   </div>
+                  <button onClick={() => setShowPresets(true)} style={{
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8,
+                    background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+                    color: '#818cf8', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  }}>
+                    <Lightbulb size={12} /> Example goals
+                  </button>
                 </div>
-                <button onClick={() => setShowPresets(true)} style={{
-                  display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8,
-                  background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
-                  color: '#818cf8', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                }}>
-                  <Lightbulb size={13} /> See example scenarios
-                </button>
+
+                {/* Agent cards grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                  {AGENTS.map((a, idx) => {
+                    const Icon = a.icon
+                    const on = selected.includes(a.type)
+                    return (
+                      <motion.button
+                        key={a.type}
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.04, duration: 0.28 }}
+                        onClick={() => toggleAgent(a.type)}
+                        style={{
+                          textAlign: 'left', padding: '16px', borderRadius: 12, cursor: 'pointer',
+                          background: on ? a.color + '12' : 'rgba(255,255,255,0.03)',
+                          border: on ? `1.5px solid ${a.color}45` : '1.5px solid rgba(255,255,255,0.07)',
+                          display: 'flex', flexDirection: 'column', gap: 10, transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={e => { if (!on) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.055)' }}
+                        onMouseLeave={e => { if (!on) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)' }}
+                      >
+                        {/* Icon + check */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{
+                            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                            background: a.color + (on ? '22' : '14'),
+                            border: `1.5px solid ${a.color}${on ? '55' : '25'}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <Icon size={17} color={a.color} />
+                          </div>
+                          {on && (
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                              <CheckCircle2 size={15} color={a.color} />
+                            </motion.div>
+                          )}
+                        </div>
+
+                        {/* Name + desc */}
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: on ? '#fff' : 'rgba(255,255,255,0.7)', marginBottom: 3, letterSpacing: '-0.01em' }}>
+                            {a.name}
+                          </div>
+                          <div style={{ fontSize: 11, color: on ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.3)', lineHeight: 1.5 }}>
+                            {a.desc}
+                          </div>
+                        </div>
+
+                        {/* Selected badge */}
+                        {on && (
+                          <div style={{ fontSize: 11, fontWeight: 600, color: a.color, padding: '3px 8px', borderRadius: 6, background: a.color + '15', alignSelf: 'flex-start' }}>
+                            Step {selected.indexOf(a.type) + 1} of {selected.length}
+                          </div>
+                        )}
+                      </motion.button>
+                    )
+                  })}
+                </div>
+
+                {/* Subtle tip */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Sparkles size={12} color="rgba(99,102,241,0.6)" />
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)', lineHeight: 1.5 }}>
+                    Agents execute in sequence — each one reads the previous output and builds on it for a layered, multi-perspective result.
+                  </span>
+                </div>
               </div>
             )}
 
