@@ -6,11 +6,12 @@ import {
   Brain, PenLine, Bot, Search, Library, Plus,
   ChevronDown, ChevronRight, TrendingUp, MessageSquare,
   Code2, Globe, Calendar, Users, Settings, PanelLeftClose, PanelLeftOpen,
-  ChevronLeft, LogOut, Bell, Clock
+  ChevronLeft, LogOut, Bell, Clock, Building2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAgentStore, AGENTS } from '@/store/agentStore'
 import { useRecentConversations } from '@/lib/hooks/useRecentConversations'
+import CompanyProfileModal from './CompanyProfileModal'
 
 const AGENT_ICONS: Record<string, React.ElementType> = {
   orchestrator:       Brain,
@@ -44,6 +45,7 @@ export default function AgentSidebar({ collapsed, onToggle }: SidebarProps) {
   const { activeAgentId, setActiveAgent } = useAgentStore()
   const [agentsExpanded, setAgentsExpanded] = useState(true)
   const [recentsExpanded, setRecentsExpanded] = useState(true)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const { recents, loading: recentsLoading, loadConversation } = useRecentConversations(12)
 
@@ -280,6 +282,40 @@ export default function AgentSidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/*  Footer  */}
       <div style={{ padding: '8px', borderTop: '1px solid var(--sidebar-border)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {/* Company Profile button */}
+        {collapsed ? (
+          <button
+            onClick={() => setProfileOpen(true)}
+            title="Company Profile"
+            style={{
+              width: '100%', padding: '6px', borderRadius: 8, border: 'none',
+              background: 'transparent', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--sidebar-muted)', transition: 'background 0.12s, color 0.12s',
+              marginBottom: 2,
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--sidebar-hover)'; (e.currentTarget as HTMLElement).style.color = '#6366F1' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--sidebar-muted)' }}
+          >
+            <Building2 size={15} />
+          </button>
+        ) : (
+          <button
+            onClick={() => setProfileOpen(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              width: '100%', padding: '7px 10px', borderRadius: 8, border: 'none',
+              background: 'transparent', cursor: 'pointer',
+              color: 'var(--sidebar-muted)', transition: 'background 0.12s, color 0.12s',
+              marginBottom: 2,
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.1)'; (e.currentTarget as HTMLElement).style.color = '#6366F1' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--sidebar-muted)' }}
+          >
+            <Building2 size={14} />
+            <span style={{ fontSize: 13, fontWeight: 500 }}>Company Profile</span>
+          </button>
+        )}
         {/* User profile row */}
         <div style={{
           display: 'flex', alignItems: 'center',
@@ -331,6 +367,8 @@ export default function AgentSidebar({ collapsed, onToggle }: SidebarProps) {
           )}
         </div>
       </div>
+
+      <CompanyProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </motion.aside>
   )
 }

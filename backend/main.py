@@ -18,6 +18,7 @@ from langchain_openai import ChatOpenAI
 from crewai import Crew, Process
 from agents import NexOSAgents
 from tasks import NexOSTasks
+from company_context import load_profile, save_profile as _save_profile
 
 app = FastAPI(title="NexOS Agent API", version="2.0")
 
@@ -56,6 +57,18 @@ class AgentInfo(BaseModel):
     description: str
     status: str
     avatar_color: str
+
+class CompanyProfileModel(BaseModel):
+    company_name: Optional[str] = ""
+    tagline: Optional[str] = ""
+    industry: Optional[str] = ""
+    stage: Optional[str] = ""
+    product_description: Optional[str] = ""
+    target_customers: Optional[str] = ""
+    team_size: Optional[str] = ""
+    key_differentiators: Optional[str] = ""
+    competitors: Optional[str] = ""
+    revenue_model: Optional[str] = ""
 
 # ── Agent metadata (mirrors frontend agentStore.ts) ──────────
 
@@ -135,6 +148,18 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+
+@app.get("/api/company-profile")
+async def get_company_profile():
+    """Return the current startup company profile."""
+    return load_profile()
+
+
+@app.patch("/api/company-profile")
+async def update_company_profile(data: CompanyProfileModel):
+    """Save the startup company profile — agents pick it up on the next request."""
+    return _save_profile(data.dict())
 
 
 @app.get("/agents")

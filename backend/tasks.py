@@ -1,6 +1,7 @@
 from crewai import Task
 from textwrap import dedent
 from crewai import Agent
+from company_context import format_context
 
 
 class NexOSTasks:
@@ -278,4 +279,10 @@ class NexOSTasks:
         }
         if agent_type not in dispatch:
             raise ValueError(f"No task defined for agent type: '{agent_type}'")
-        return dispatch[agent_type](message, agent)
+        task = dispatch[agent_type](message, agent)
+        # Prepend startup context (if profile has been set) so every agent
+        # response is grounded in who the startup is, what they do, and for whom.
+        ctx = format_context()
+        if ctx:
+            task.description = ctx + "\n" + task.description
+        return task
