@@ -50,10 +50,17 @@ class NexOSTasks:
                 - If it's a forecast question: reason through pipeline math
                 - Always end with 2-3 specific next steps
                 - Use web search for market context if relevant
+
+                CRITICAL - Tool Usage Rules:
+                - If the user wants to SEND an email to a real address, you MUST call
+                  the `gmail_send_email` tool with the recipient address, subject, and body.
+                  Do NOT just write the email text in your response — actually invoke the tool.
+                - If the user wants to save a draft for review, call `gmail_create_draft` instead.
+                - Only describe the email in text if explicitly asked to preview it first.
             """),
             expected_output=(
                 "Actionable sales intelligence or copy. Structured with clear sections. "
-                "Ends with numbered next steps."
+                "Ends with numbered next steps. If an email was sent, confirm the recipient and subject."
             ),
             agent=agent,
         )
@@ -74,10 +81,15 @@ class NexOSTasks:
                   identify churn signals, suggest retention actions
                 - If it's a template request: write a human, empathetic support response
                 - Connect every finding back to revenue or retention impact
+
+                CRITICAL - Tool Usage Rules:
+                - If the user wants to SEND an email to a customer or specific address,
+                  you MUST call the `gmail_send_email` tool. Do NOT just write it in your response.
+                - If the user wants a draft saved for review, call `gmail_create_draft` instead.
             """),
             expected_output=(
                 "Customer support analysis or response draft. Clear, empathetic tone. "
-                "Includes root cause and recommended action."
+                "Includes root cause and recommended action. If an email was sent, confirm it."
             ),
             agent=agent,
         )
@@ -152,10 +164,16 @@ class NexOSTasks:
                 - If it's an action item request: list all actions with owner, 
                   priority (P1/P2/P3), and deadline
                 - Never produce walls of text. Always structured lists.
+
+                CRITICAL - Tool Usage Rules:
+                - If the user wants to SEND a meeting invite or follow-up email to a real
+                  address, call the `gmail_send_email` tool. Do NOT just write it in the response.
+                - If the user wants to post to Slack, call the `slack_post_message` tool.
             """),
             expected_output=(
                 "Structured meeting output: agenda, summary, or action items. "
-                "Always formatted as clear lists with owners and deadlines."
+                "Always formatted as clear lists with owners and deadlines. "
+                "If an email was sent or Slack message posted, confirm it."
             ),
             agent=agent,
         )
@@ -179,10 +197,16 @@ class NexOSTasks:
                   and coverage gaps
                 - If it's an onboarding question: provide a structured 30/60/90 day plan
                 - Be direct and practical. Founders don't have time for HR fluff.
+
+                CRITICAL - Tool Usage Rules:
+                - If the user wants to SEND an email (offer letter, rejection, announcement),
+                  you MUST call the `gmail_send_email` tool with the real recipient address.
+                  Do NOT just write the email text in your response — invoke the tool.
+                - If the user wants a draft saved, call `gmail_create_draft` instead.
             """),
             expected_output=(
                 "Practical HR/Ops output: JD, hiring analysis, capacity report, or "
-                "onboarding plan. Direct and structured."
+                "onboarding plan. Direct and structured. If an email was sent, confirm the recipient."
             ),
             agent=agent,
         )

@@ -25,8 +25,11 @@ from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
-_CREDS_PATH = lambda: os.getenv("GMAIL_CREDENTIALS_PATH", "credentials.json")
-_TOKEN_PATH = lambda: os.getenv("GMAIL_TOKEN_PATH", "token.json")
+
+# Use absolute paths so the backend works regardless of cwd
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_CREDS_PATH = lambda: os.getenv("GMAIL_CREDENTIALS_PATH", os.path.join(_BACKEND_DIR, "credentials.json"))
+_TOKEN_PATH = lambda: os.getenv("GMAIL_TOKEN_PATH", os.path.join(_BACKEND_DIR, "token.json"))
 
 
 def _gmail_service():
