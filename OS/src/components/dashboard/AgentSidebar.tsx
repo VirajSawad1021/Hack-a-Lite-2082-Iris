@@ -6,10 +6,11 @@ import {
   Brain, PenLine, Bot, Search, Library, Plus,
   ChevronDown, ChevronRight, TrendingUp, MessageSquare,
   Code2, Globe, Calendar, Users, Settings, PanelLeftClose, PanelLeftOpen,
-  ChevronLeft, LogOut, Bell
+  ChevronLeft, LogOut, Bell, Clock
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAgentStore, AGENTS } from '@/store/agentStore'
+import { useRecentConversations } from '@/lib/hooks/useRecentConversations'
 
 const AGENT_ICONS: Record<string, React.ElementType> = {
   orchestrator:       Brain,
@@ -42,6 +43,9 @@ export default function AgentSidebar({ collapsed, onToggle }: SidebarProps) {
   const router = useRouter()
   const { activeAgentId, setActiveAgent } = useAgentStore()
   const [agentsExpanded, setAgentsExpanded] = useState(true)
+  const [recentsExpanded, setRecentsExpanded] = useState(true)
+
+  const { recents, loading: recentsLoading, loadConversation } = useRecentConversations(12)
 
   const sidebarWidth = collapsed ? 56 : 240
 
@@ -191,6 +195,87 @@ export default function AgentSidebar({ collapsed, onToggle }: SidebarProps) {
             )
           })}
         </AnimatePresence>
+
+        {/* ── Recents ───────────────────────────────────────── */}
+        {!collapsed && (
+          <>
+            <div style={{ height: 1, background: 'var(--sidebar-border)', margin: '8px 0' }} />
+
+            {/* Recents header */}
+            <button
+              onClick={() => setRecentsExpanded(v => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                width: '100%', padding: '4px 4px 6px', background: 'transparent',
+                border: 'none', cursor: 'pointer', flexShrink: 0,
+              }}
+            >
+              <span style={{
+                fontSize: 11, fontWeight: 600, color: 'var(--sidebar-muted)',
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+              }}>
+                Recents
+              </span>
+              {recentsExpanded
+                ? <ChevronDown size={11} color="rgba(255,255,255,0.3)" />
+                : <ChevronRight size={11} color="rgba(255,255,255,0.3)" />
+              }
+            </button>
+
+            <AnimatePresence>
+              {recentsExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.18 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  {recentsLoading ? (
+                    <div style={{ padding: '6px 4px', fontSize: 11, color: 'var(--sidebar-muted)' }}>Loading…</div>
+                  ) : recents.length === 0 ? (
+                    <div style={{ padding: '6px 4px', fontSize: 11, color: 'var(--sidebar-muted)', opacity: 0.6 }}>
+                      No recent conversations
+                    </div>
+                  ) : (
+                    recents.map((conv) => {
+                      const label = conv.title ?? conv.summary ?? conv.last_message ?? 'Conversation'
+                      const Icon = AGENT_ICONS[conv.agent_type] ?? Bot
+                      const color = AGENT_COLORS[conv.agent_type] ?? '#6366F1'
+
+                      return (
+                        <button
+                          key={conv.id}
+                          onClick={async () => {
+                            setActiveAgent(conv.agent_store_id)
+                            await loadConversation(conv)
+                          }}
+                          className="sidebar-item"
+                          style={{ justifyContent: 'flex-start', gap: 8, paddingLeft: 6 }}
+                        >
+                          <div style={{
+                            width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+                            background: color + '18',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <Icon size={11} color={color} />
+                          </div>
+                          <span style={{
+                            fontSize: 13, color: 'var(--sidebar-text)',
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            flex: 1, textAlign: 'left',
+                          }}>
+                            {label.length > 28 ? label.slice(0, 25) + '…' : label}
+                          </span>
+                        </button>
+                      )
+                    })
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
       </div>
 
       {/*  Footer  */}
