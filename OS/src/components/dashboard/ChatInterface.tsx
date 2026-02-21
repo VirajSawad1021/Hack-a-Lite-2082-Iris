@@ -1,5 +1,7 @@
 ﻿'use client'
 import { useState, useRef, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import {
   Plus, ArrowUp, Paperclip, Mic, MoreHorizontal,
   TrendingUp, PenLine, BarChart3, Calendar, Code2,
@@ -234,9 +236,13 @@ export default function ChatInterface() {
                       <span style={{ fontSize: 12, fontWeight: 600, color }}>{activeAgent.name[0]}</span>
                     </div>
                   )}
-                  <div className={msg.role === 'user' ? 'bubble-user' : 'bubble-agent'}>
-                    {msg.content}
-                  </div>
+                  {msg.role === 'user' ? (
+                    <div className="bubble-user">{msg.content}</div>
+                  ) : (
+                    <div className="bubble-agent">
+                      <MarkdownMessage content={msg.content} color={color} />
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -381,6 +387,130 @@ export default function ChatInterface() {
   )
 }
 
+// ── Markdown renderer for agent responses ──────────────────────
+
+import React from 'react'
+const _ListCtx = React.createContext(false) // false = ul, true = ol
+
+function MarkdownMessage({ content, color }: { content: string; color: string }) {
+  return (
+    <div style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.72, fontFamily: 'var(--font-inter, Inter, system-ui, sans-serif)' }}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Headings
+          h1: ({ children }) => (
+            <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', margin: '18px 0 8px', color: 'var(--text-primary)', lineHeight: 1.3 }}>{children}</h1>
+          ),
+          h2: ({ children }) => (
+            <h2 style={{ fontSize: 15.5, fontWeight: 700, letterSpacing: '-0.01em', margin: '16px 0 6px', color: 'var(--text-primary)', lineHeight: 1.3 }}>{children}</h2>
+          ),
+          h3: ({ children }) => (
+            <h3 style={{ fontSize: 14, fontWeight: 700, margin: '12px 0 4px', color: 'var(--text-primary)' }}>{children}</h3>
+          ),
+          // Paragraph
+          p: ({ children }) => (
+            <p style={{ margin: '0 0 10px', lineHeight: 1.72 }}>{children}</p>
+          ),
+          // Bold
+          strong: ({ children }) => (
+            <strong style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{children}</strong>
+          ),
+          // Em
+          em: ({ children }) => (
+            <em style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>{children}</em>
+          ),
+          // Unordered list
+          ul: ({ children }) => (
+            <_ListCtx.Provider value={false}>
+              <ul style={{ margin: '6px 0 10px', paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 5 }}>{children}</ul>
+            </_ListCtx.Provider>
+          ),
+          // Ordered list
+          ol: ({ children }) => (
+            <_ListCtx.Provider value={true}>
+              <ol style={{ margin: '6px 0 10px', paddingLeft: 22, display: 'flex', flexDirection: 'column', gap: 5 }}>{children}</ol>
+            </_ListCtx.Provider>
+          ),
+          // List item — dot for ul, number for ol
+          li: ({ children }) => {
+            const isOrdered = React.useContext(_ListCtx)
+            if (isOrdered) return (
+              <li style={{ lineHeight: 1.6, paddingLeft: 2, color: 'var(--text-primary)' }}>
+                <span style={{ fontWeight: 600, color }}>{/* number from browser */}</span>
+                {children}
+              </li>
+            )
+            return (
+              <li style={{ display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.6, listStyle: 'none' }}>
+                <span style={{ marginTop: 8, width: 5, height: 5, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                <span>{children}</span>
+              </li>
+            )
+          },
+          // Horizontal rule
+          hr: () => (
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border-default)', margin: '14px 0' }} />
+          ),
+          // Blockquote
+          blockquote: ({ children }) => (
+            <blockquote style={{
+              margin: '10px 0', padding: '8px 14px',
+              borderLeft: `3px solid ${color}`,
+              background: color + '08', borderRadius: '0 8px 8px 0',
+              color: 'var(--text-secondary)', fontStyle: 'italic',
+            }}>{children}</blockquote>
+          ),
+          // Inline code
+          code: ({ children, className }) => {
+            const isBlock = (className ?? '').startsWith('language-')
+            if (isBlock) return (
+              <pre style={{
+                margin: '10px 0', padding: '12px 14px', borderRadius: 10,
+                background: 'var(--bg-landing-card)',
+                border: '1px solid var(--border-default)',
+                overflowX: 'auto', fontSize: 12.5, lineHeight: 1.6,
+                fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+                color: 'var(--text-primary)',
+              }}>
+                <code>{children}</code>
+              </pre>
+            )
+            return (
+              <code style={{
+                fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+                fontSize: 12.5, padding: '1.5px 6px', borderRadius: 5,
+                background: color + '14', color,
+              }}>{children}</code>
+            )
+          },
+          // Table
+          table: ({ children }) => (
+            <div style={{ overflowX: 'auto', margin: '10px 0' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>{children}</table>
+            </div>
+          ),
+          thead: ({ children }) => (
+            <thead style={{ background: color + '10' }}>{children}</thead>
+          ),
+          th: ({ children }) => (
+            <th style={{ padding: '7px 12px', textAlign: 'left', fontWeight: 700, borderBottom: `2px solid ${color}30`, fontSize: 12, letterSpacing: '0.03em', textTransform: 'uppercase', color }}>{children}</th>
+          ),
+          td: ({ children }) => (
+            <td style={{ padding: '7px 12px', borderBottom: '1px solid var(--border-default)', color: 'var(--text-primary)' }}>{children}</td>
+          ),
+          // Links
+          a: ({ href, children }) => (
+            <a href={href} target="_blank" rel="noopener noreferrer" style={{ color, textDecoration: 'underline', textUnderlineOffset: 3 }}>{children}</a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
+}
+
 // ── Streaming agent panel ───────────────────────────────────────
 
 interface StreamState { events: StreamEvent[]; finalText: string; isDone: boolean }
@@ -427,10 +557,8 @@ function StreamingAgentMessage({ state, color, agentName }: {
         <div style={{
           padding: '10px 14px 12px',
           borderTop: `1px solid ${color}18`,
-          fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.65,
-          whiteSpace: 'pre-wrap',
         }}>
-          {state.finalText}
+          <MarkdownMessage content={state.finalText} color={color} />
         </div>
       )}
     </div>
